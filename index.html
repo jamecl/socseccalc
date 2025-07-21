@@ -366,6 +366,7 @@
                     <select id="ssDepletionScenario">
                         <option value="current">Current Law (No Changes)</option>
                         <option value="depletion">2034 Trust Fund Depletion (23% Benefit Cut)</option>
+                        <option value="insolvency">2034 Social Security Insolvency (100% Benefit Loss)</option>
                     </select>
                     <small style="color: #666; font-size: 0.85em;">Trustees project trust fund depletion by 2034 without reforms</small>
                 </div>
@@ -390,7 +391,13 @@
                     <br>
                     <p><strong>💰 Inflation Impact:</strong> This calculator accounts for both general inflation and Social Security COLA adjustments. All final amounts are shown in today's purchasing power.</p>
                     <br>
-                    <p><strong>⚠️ Important:</strong> Current projections show Social Security trust funds may be depleted by 2035, potentially reducing benefits to 83% of scheduled amounts. This analysis assumes current benefit levels.</p>
+                    <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                        <h4 style="color: #856404; margin: 0 0 10px 0;">🚨 Future Economic Uncertainties</h4>
+                        <p style="margin: 0 0 10px 0; font-size: 0.9rem; color: #856404;"><strong>The Urgency of Action:</strong> The window for implementing comprehensive Social Security reforms is narrowing as AI adoption accelerates. Unlike traditional economic downturns that allow for sector-based recovery, AI-driven unemployment presents unique challenges because displaced workers often need extensive retraining to shift into entirely new fields.</p>
+                        <p style="margin: 0 0 10px 0; font-size: 0.9rem; color: #856404;">The convergence of AI displacement and demographic changes creates an unprecedented threat to Social Security's financial foundation. Current social insurance systems designed for a different economic era are ill-equipped to handle this disruption, making proactive policy responses increasingly critical.</p>
+                        <p style="margin: 0; font-size: 0.9rem; color: #856404;">Without intervention, the Social Security system faces potential collapse from insufficient workers contributing to fund benefits - a scenario that could materialize much faster than the already-projected 2034 shortfall date.</p>
+                    </div>
+                    <p><strong>⚠️ Important:</strong> Current projections show Social Security trust funds may be depleted by 2034, potentially reducing benefits to 77% of scheduled amounts (23% cut). This analysis assumes current benefit levels.</p>
                 </div>
             </div>
         </div>
@@ -478,7 +485,7 @@
         }
 
         function applyDepletionScenario(benefit, startYear, yearsFromStart, depletionScenario) {
-            if (depletionScenario !== 'depletion') {
+            if (depletionScenario === 'current') {
                 return benefit;
             }
             
@@ -486,9 +493,13 @@
             const currentYear = 2025; // Base year
             const benefitYear = currentYear + startYear + yearsFromStart;
             
-            // If benefit year is 2034 or later, apply 23% reduction
+            // If benefit year is 2034 or later, apply scenario
             if (benefitYear >= depletionYear) {
-                return benefit * 0.77; // 23% cut = 77% of original benefit
+                if (depletionScenario === 'depletion') {
+                    return benefit * 0.77; // 23% cut = 77% of original benefit
+                } else if (depletionScenario === 'insolvency') {
+                    return 0; // 100% benefit loss = no benefits
+                }
             }
             
             return benefit;
@@ -877,6 +888,8 @@
             html += '<strong>Inflation:</strong> ' + inflationRate + '% general, ' + ssInflation + '% Social Security COLA<br>';
             if (depletionScenario === 'depletion') {
                 html += '<strong>⚠️ Depletion Scenario:</strong> 23% benefit cut starting in 2034<br>';
+            } else if (depletionScenario === 'insolvency') {
+                html += '<strong>🚨 Insolvency Scenario:</strong> 100% benefit loss starting in 2034<br>';
             }
             html += '<strong>Note:</strong> All values shown in today\'s purchasing power (inflation-adjusted)';
             html += '</div>';
@@ -939,6 +952,8 @@
             html += '<div class="insight-item">';
             if (depletionScenario === 'depletion') {
                 html += '<strong>🚨 Trust Fund Depletion Impact:</strong> The 2034 benefit cuts significantly favor claiming early to lock in higher benefits before the reduction';
+            } else if (depletionScenario === 'insolvency') {
+                html += '<strong>💀 Insolvency Impact:</strong> Complete benefit loss in 2034 makes claiming as early as possible critical to receive any Social Security benefits';
             } else {
                 html += '<strong>Trust Fund Stability:</strong> Analysis assumes current benefit levels remain unchanged throughout retirement';
             }
@@ -969,6 +984,8 @@
             html += '<div class="insight-item">';
             if (depletionScenario === 'depletion') {
                 html += '<strong>Depletion Strategy:</strong> With projected 2034 benefit cuts, claiming earlier becomes more attractive to maximize benefits before the reduction takes effect';
+            } else if (depletionScenario === 'insolvency') {
+                html += '<strong>Insolvency Strategy:</strong> With complete benefit loss in 2034, claiming immediately at 62 becomes the only way to receive any Social Security benefits';
             } else {
                 html += '<strong>Research Finding:</strong> For singles with average life expectancy, the present value of benefits is approximately the same regardless of claiming age. The choice depends on your priorities: portfolio preservation vs. longevity protection.';
             }
@@ -995,6 +1012,8 @@
             html += '<strong>Inflation:</strong> ' + inflationRate + '% general, ' + ssInflation + '% SS COLA<br>';
             if (depletionScenario === 'depletion') {
                 html += '<strong>⚠️ Depletion Scenario:</strong> 23% benefit cut starting in 2034<br>';
+            } else if (depletionScenario === 'insolvency') {
+                html += '<strong>🚨 Insolvency Scenario:</strong> 100% benefit loss starting in 2034<br>';
             }
             html += '<strong>Note:</strong> All values in today\'s purchasing power';
             html += '</div>';
@@ -1063,6 +1082,10 @@
             if (depletionScenario === 'depletion') {
                 html += '<div class="insight-item">';
                 html += '<strong>Timing Advantage:</strong> Couples should especially consider claiming strategies that maximize benefits before 2034, when trust fund depletion could reduce payments by 23%';
+                html += '</div>';
+            } else if (depletionScenario === 'insolvency') {
+                html += '<div class="insight-item">';
+                html += '<strong>Critical Timing:</strong> With complete Social Security insolvency in 2034, couples must claim benefits immediately upon eligibility to receive anything at all';
                 html += '</div>';
             }
             html += '</div>';
