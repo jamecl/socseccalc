@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Security vs Investment Portfolio Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 0;
+        }
+
+        .inputs {
+            padding: 30px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+        }
+
+        .results {
+            padding: 30px;
+            background: white;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .spouse-fields {
+            margin-top: 10px;
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s ease;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .strategy-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 3px solid #dee2e6;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .strategy-card.winner {
+            border-color: #27ae60;
+            background: linear-gradient(135deg, #d5f4e6 0%, #f8f9fa 100%);
+            box-shadow: 0 10px 30px rgba(39, 174, 96, 0.3);
+        }
+
+        .strategy-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .strategy-card.winner .strategy-title {
+            color: #27ae60;
+        }
+
+        .total-value {
+            font-size: 2rem;
+            font-weight: 800;
+            text-align: center;
+            margin: 15px 0;
+            color: #2c3e50;
+        }
+
+        .strategy-card.winner .total-value {
+            color: #27ae60;
+        }
+
+        .breakdown {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .breakdown-item:last-child {
+            border-bottom: none;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .breakdown-label {
+            color: #666;
+        }
+
+        .breakdown-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .winner-banner {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .key-insights {
+            background: linear-gradient(135deg, #fff3cd 0%, #fefefe 100%);
+            border: 2px solid #f39c12;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 25px;
+        }
+
+        .key-insights h3 {
+            color: #f39c12;
+            margin-bottom: 15px;
+        }
+
+        .insight-item {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .insight-item:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .parameter-display {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .parameter-display strong {
+            color: #2c3e50;
+        }
+
+        @media (max-width: 1200px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            .inputs {
+                border-right: none;
+                border-bottom: 1px solid #e9ecef;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Social Security vs Investment Portfolio Calculator</h1>
+            <p>Should you take Social Security early to preserve your investment portfolio, or delay for higher benefits?</p>
+        </div>
+        
+        <div class="content">
+            <div class="inputs">
+                <div class="input-group">
+                    <label for="analysisType">Analysis Type</label>
+                    <select id="analysisType" onchange="toggleSpouseFields()">
+                        <option value="single">Single Person</option>
+                        <option value="couple">Married Couple</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="currentAge">Your Current Age</label>
+                    <input type="number" id="currentAge" value="62" min="50" max="75">
+                </div>
+
+                <div class="spouse-fields" id="spouseFields" style="display: none;">
+                    <div class="input-group">
+                        <label for="spouseAge">Spouse's Current Age</label>
+                        <input type="number" id="spouseAge" value="57" min="50" max="75">
+                        <small style="color: #666; font-size: 0.85em;">Must be 62+ to claim Social Security</small>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="portfolioValue">Current Investment Portfolio Value ($)</label>
+                    <input type="number" id="portfolioValue" value="500000" min="50000" max="5000000" step="10000">
+                </div>
+
+                <div class="input-group">
+                    <label for="monthlyExpenses">Monthly Living Expenses ($)</label>
+                    <input type="number" id="monthlyExpenses" value="4000" min="1000" max="15000" step="100">
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="pia">Your Social Security PIA ($)</label>
+                        <input type="number" id="pia" value="2000" min="500" max="5000" step="50">
+                        <small style="color: #666; font-size: 0.85em;">PIA = benefit at Full Retirement Age</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="fra">Your Full Retirement Age</label>
+                        <select id="fra">
+                            <option value="66">66 (born 1943-1954)</option>
+                            <option value="67" selected>67 (born 1960+)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="spouse-fields" id="spousePiaFields" style="display: none;">
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="spousePia">Spouse's Social Security PIA ($)</label>
+                            <input type="number" id="spousePia" value="1800" min="500" max="5000" step="50">
+                            <small style="color: #666; font-size: 0.85em;">PIA = benefit at Full Retirement Age</small>
+                        </div>
+                        <div class="input-group">
+                            <label for="spouseFra">Spouse's Full Retirement Age</label>
+                            <select id="spouseFra">
+                                <option value="66">66 (born 1943-1954)</option>
+                                <option value="67" selected>67 (born 1960+)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="lifeExpectancy">Your Life Expectancy</label>
+                        <input type="number" id="lifeExpectancy" value="85" min="70" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label for="investmentReturn">Portfolio Return (%)</label>
+                        <input type="number" id="investmentReturn" value="7" min="0" max="15" step="0.5">
+                        <small style="color: #666; font-size: 0.85em;">Nominal annual return</small>
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="inflationRate">Expected Inflation Rate (%)</label>
+                        <input type="number" id="inflationRate" value="2.5" min="0" max="10" step="0.1">
+                        <small style="color: #666; font-size: 0.85em;">Annual inflation assumption</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="ssInflation">Social Security COLA (%)</label>
+                        <input type="number" id="ssInflation" value="2.5" min="0" max="8" step="0.1">
+                        <small style="color: #666; font-size: 0.85em;">Annual SS cost-of-living adjustments</small>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="ssDepletionScenario">Social Security Trust Fund Scenario</label>
+                    <select id="ssDepletionScenario">
+                        <option value="current">Current Law (No Changes)</option>
+                        <option value="depletion">2034 Trust Fund Depletion (23% Benefit Cut)</option>
+                    </select>
+                    <small style="color: #666; font-size: 0.85em;">Trustees project trust fund depletion by 2034 without reforms</small>
+                </div>
+
+                <div class="spouse-fields" id="spouseLifeFields" style="display: none;">
+                    <div class="input-group">
+                        <label for="spouseLifeExpectancy">Spouse's Life Expectancy</label>
+                        <input type="number" id="spouseLifeExpectancy" value="88" min="70" max="100">
+                    </div>
+                </div>
+
+                <button class="calculate-btn" onclick="calculateStrategy()">Compare Strategies</button>
+            </div>
+
+            <div class="results" id="results">
+                <div class="parameter-display">
+                    <h3>📊 How This Works</h3>
+                    <p><strong>Early Claiming:</strong> Take Social Security now → withdraw less from your portfolio → more money stays invested</p>
+                    <p><strong>Delayed Claiming:</strong> Wait for Social Security → withdraw more from your portfolio → less money stays invested</p>
+                    <br>
+                    <p><strong>Question:</strong> Which strategy leaves you with more total wealth at life expectancy?</p>
+                    <br>
+                    <p><strong>💰 Inflation Impact:</strong> This calculator accounts for both general inflation and Social Security COLA adjustments. All final amounts are shown in today's purchasing power.</p>
+                    <br>
+                    <p><strong>⚠️ Important:</strong> Current projections show Social Security trust funds may be depleted by 2035, potentially reducing benefits to 83% of scheduled amounts. This analysis assumes current benefit levels.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSpouseFields() {
+            const analysisType = document.getElementById('analysisType').value;
+            const spouseFields = document.querySelectorAll('.spouse-fields');
+            
+            spouseFields.forEach(field => {
+                field.style.display = analysisType === 'couple' ? 'block' : 'none';
+            });
+        }
+
+        function calculateBenefit(age, pia, fra) {
+            if (age < 62) return 0;
+            if (age > 70) age = 70;
+
+            if (age < fra) {
+                const monthsEarly = (fra - age) * 12;
+                let reduction = 0;
+                
+                const firstMonths = Math.min(monthsEarly, 36);
+                reduction += firstMonths * (5/9) / 100;
+                
+                if (monthsEarly > 36) {
+                    reduction += (monthsEarly - 36) * (5/12) / 100;
+                }
+                return pia * (1 - reduction);
+            } else if (age > fra) {
+                const monthsDelayed = (age - fra) * 12;
+                const delayedCredit = monthsDelayed * (2/3) / 100;
+                return pia * (1 + delayedCredit);
+            } else {
+                return pia;
+            }
+        }
+
+        function calculateSpousalBenefit(age, spousePia, fra) {
+            if (age < 62) return 0;
+            if (age > 70) age = 70;
+
+            const spousalBase = spousePia * 0.5;
+            
+            if (age < fra) {
+                const monthsEarly = (fra - age) * 12;
+                let reduction = 0;
+                
+                const firstMonths = Math.min(monthsEarly, 36);
+                reduction += firstMonths * (25/36) / 100;
+                
+                if (monthsEarly > 36) {
+                    reduction += (monthsEarly - 36) * (5/12) / 100;
+                }
+                return spousalBase * (1 - reduction);
+            } else {
+                return spousalBase;
+            }
+        }
+
+        function calculatePortfolioGrowth(initialValue, monthlyWithdrawal, nominalReturn, inflationRate, years) {
+            let balance = initialValue;
+            const realReturn = ((1 + nominalReturn/100) / (1 + inflationRate/100) - 1);
+            const monthlyRealReturn = realReturn / 12;
+            const monthlyInflation = inflationRate / 100 / 12;
+            const totalMonths = years * 12;
+            let currentWithdrawal = monthlyWithdrawal;
+
+            for (let month = 0; month < totalMonths; month++) {
+                // Adjust withdrawal for inflation each month
+                if (month > 0) {
+                    currentWithdrawal = currentWithdrawal * (1 + monthlyInflation);
+                }
+                
+                balance = balance * (1 + monthlyRealReturn) - currentWithdrawal;
+                if (balance < 0) balance = 0;
+            }
+
+            return balance;
+        }
+
+        function calculateInflatedBenefit(baseBenefit, ssInflation, years) {
+            return baseBenefit * Math.pow(1 + ssInflation/100, years);
+        }
+
+        function applyDepletionScenario(benefit, startYear, yearsFromStart, depletionScenario) {
+            if (depletionScenario !== 'depletion') {
+                return benefit;
+            }
+            
+            const depletionYear = 2034;
+            const currentYear = 2025; // Base year
+            const benefitYear = currentYear + startYear + yearsFromStart;
+            
+            // If benefit year is 2034 or later, apply 23% reduction
+            if (benefitYear >= depletionYear) {
+                return benefit * 0.77; // 23% cut = 77% of original benefit
+            }
+            
+            return benefit;
+        }
+
+        function calculateStrategy() {
+            try {
+                const analysisType = document.getElementById('analysisType').value;
+                
+                if (analysisType === 'single') {
+                    calculateSingleStrategy();
+                } else {
+                    calculateCoupleStrategy();
+                }
+            } catch (error) {
+                document.getElementById('results').innerHTML = '<div class="parameter-display"><h3>Error</h3><p>There was an error calculating the strategies. Please check your inputs and try again.</p></div>';
+                console.error('Calculation error:', error);
+            }
+        }
+
+        function calculateSingleStrategy() {
+            const currentAge = parseInt(document.getElementById('currentAge').value);
+            const portfolioValue = parseInt(document.getElementById('portfolioValue').value);
+            const monthlyExpenses = parseInt(document.getElementById('monthlyExpenses').value);
+            const pia = parseInt(document.getElementById('pia').value);
+            const fra = parseFloat(document.getElementById('fra').value);
+            const lifeExpectancy = parseInt(document.getElementById('lifeExpectancy').value);
+            const investmentReturn = parseFloat(document.getElementById('investmentReturn').value);
+            const inflationRate = parseFloat(document.getElementById('inflationRate').value);
+            const ssInflation = parseFloat(document.getElementById('ssInflation').value);
+            const depletionScenario = document.getElementById('ssDepletionScenario').value;
+
+            const yearsToProject = lifeExpectancy - currentAge;
+
+            // Strategy A: Claim at 62
+            const earlyBenefit = calculateBenefit(62, pia, fra);
+            const earlyWithdrawal = Math.max(0, monthlyExpenses - earlyBenefit);
+            const earlyPortfolioFinal = calculatePortfolioGrowth(portfolioValue, earlyWithdrawal, investmentReturn, inflationRate, yearsToProject);
+            
+            // Calculate total SS with COLA adjustments and depletion scenario
+            let earlySSTotal = 0;
+            for (let year = 0; year < yearsToProject; year++) {
+                const inflatedBenefit = calculateInflatedBenefit(earlyBenefit, ssInflation, year);
+                const depletionAdjustedBenefit = applyDepletionScenario(inflatedBenefit, 0, year, depletionScenario);
+                earlySSTotal += depletionAdjustedBenefit * 12;
+            }
+            
+            const earlyTotalWealth = earlyPortfolioFinal + earlySSTotal;
+
+            // Strategy B: Claim at FRA
+            const fraBenefit = calculateBenefit(fra, pia, fra);
+            const yearsBeforeFRA = Math.max(0, fra - currentAge);
+            const yearsAfterFRA = yearsToProject - yearsBeforeFRA;
+            
+            let fraPortfolio = portfolioValue;
+            if (yearsBeforeFRA > 0) {
+                fraPortfolio = calculatePortfolioGrowth(portfolioValue, monthlyExpenses, investmentReturn, inflationRate, yearsBeforeFRA);
+            }
+            
+            const fraWithdrawal = Math.max(0, monthlyExpenses - fraBenefit);
+            if (yearsAfterFRA > 0) {
+                fraPortfolio = calculatePortfolioGrowth(fraPortfolio, fraWithdrawal, investmentReturn, inflationRate, yearsAfterFRA);
+            }
+            
+            // Calculate total SS with COLA adjustments and depletion scenario starting from FRA
+            let fraSSTotal = 0;
+            for (let year = yearsBeforeFRA; year < yearsToProject; year++) {
+                const inflatedBenefit = calculateInflatedBenefit(fraBenefit, ssInflation, year - yearsBeforeFRA);
+                const depletionAdjustedBenefit = applyDepletionScenario(inflatedBenefit, yearsBeforeFRA, year - yearsBeforeFRA, depletionScenario);
+                fraSSTotal += depletionAdjustedBenefit * 12;
+            }
+            
+            const fraTotalWealth = fraPortfolio + fraSSTotal;
+
+            // Strategy C: Claim at 70
+            const delayedBenefit = calculateBenefit(70, pia, fra);
+            const yearsWithoutSS = Math.min(8, 70 - currentAge);
+            const yearsWithSS = yearsToProject - yearsWithoutSS;
+            
+            let delayedPortfolio = portfolioValue;
+            if (yearsWithoutSS > 0) {
+                delayedPortfolio = calculatePortfolioGrowth(portfolioValue, monthlyExpenses, investmentReturn, inflationRate, yearsWithoutSS);
+            }
+            
+            const delayedWithdrawal = Math.max(0, monthlyExpenses - delayedBenefit);
+            if (yearsWithSS > 0) {
+                delayedPortfolio = calculatePortfolioGrowth(delayedPortfolio, delayedWithdrawal, investmentReturn, inflationRate, yearsWithSS);
+            }
+            
+            // Calculate total SS with COLA adjustments and depletion scenario starting from age 70
+            let delayedSSTotal = 0;
+            for (let year = yearsWithoutSS; year < yearsToProject; year++) {
+                const inflatedBenefit = calculateInflatedBenefit(delayedBenefit, ssInflation, year - yearsWithoutSS);
+                const depletionAdjustedBenefit = applyDepletionScenario(inflatedBenefit, yearsWithoutSS, year - yearsWithoutSS, depletionScenario);
+                delayedSSTotal += depletionAdjustedBenefit * 12;
+            }
+            
+            const delayedTotalWealth = delayedPortfolio + delayedSSTotal;
+
+            const strategies = [
+                {
+                    name: "Claim Early at 62",
+                    age: 62,
+                    monthlyBenefit: earlyBenefit,
+                    finalPortfolio: earlyPortfolioFinal,
+                    totalSS: earlySSTotal,
+                    totalWealth: earlyTotalWealth,
+                    monthlyWithdrawal: earlyWithdrawal,
+                    yearsWithSS: yearsToProject
+                },
+                {
+                    name: "Claim at Full Retirement (" + fra + ")",
+                    age: fra,
+                    monthlyBenefit: fraBenefit,
+                    finalPortfolio: fraPortfolio,
+                    totalSS: fraSSTotal,
+                    totalWealth: fraTotalWealth,
+                    monthlyWithdrawal: fraWithdrawal,
+                    yearsWithSS: yearsAfterFRA
+                },
+                {
+                    name: "Delay Until 70",
+                    age: 70,
+                    monthlyBenefit: delayedBenefit,
+                    finalPortfolio: delayedPortfolio,
+                    totalSS: delayedSSTotal,
+                    totalWealth: delayedTotalWealth,
+                    monthlyWithdrawal: delayedWithdrawal,
+                    yearsWithSS: yearsWithSS
+                }
+            ];
+
+            strategies.sort((a, b) => b.totalWealth - a.totalWealth);
+            displaySingleResults(strategies, investmentReturn, inflationRate, ssInflation, depletionScenario, yearsToProject);
+        }
+
+        function calculateCoupleStrategy() {
+            const currentAge = parseInt(document.getElementById('currentAge').value);
+            const spouseAge = parseInt(document.getElementById('spouseAge').value);
+            const portfolioValue = parseInt(document.getElementById('portfolioValue').value);
+            const monthlyExpenses = parseInt(document.getElementById('monthlyExpenses').value);
+            const pia = parseInt(document.getElementById('pia').value);
+            const spousePia = parseInt(document.getElementById('spousePia').value);
+            const fra = parseFloat(document.getElementById('fra').value);
+            const spouseFra = parseFloat(document.getElementById('spouseFra').value);
+            const lifeExpectancy = parseInt(document.getElementById('lifeExpectancy').value);
+            const spouseLifeExpectancy = parseInt(document.getElementById('spouseLifeExpectancy').value);
+            const investmentReturn = parseFloat(document.getElementById('investmentReturn').value);
+            const inflationRate = parseFloat(document.getElementById('inflationRate').value);
+            const ssInflation = parseFloat(document.getElementById('ssInflation').value);
+            const depletionScenario = document.getElementById('ssDepletionScenario').value;
+
+            const higherEarner = pia >= spousePia ? 
+                { age: currentAge, pia: pia, fra: fra, life: lifeExpectancy, name: "You" } :
+                { age: spouseAge, pia: spousePia, fra: spouseFra, life: spouseLifeExpectancy, name: "Spouse" };
+            
+            const lowerEarner = pia < spousePia ? 
+                { age: currentAge, pia: pia, fra: fra, life: lifeExpectancy, name: "You" } :
+                { age: spouseAge, pia: spousePia, fra: spouseFra, life: spouseLifeExpectancy, name: "Spouse" };
+
+            const jointLifeExpectancy = Math.max(
+                higherEarner.age + (higherEarner.life - higherEarner.age),
+                lowerEarner.age + (lowerEarner.life - lowerEarner.age)
+            );
+
+            const yearsToProject = jointLifeExpectancy - Math.min(currentAge, spouseAge);
+
+            const bothEarlyStrategy = calculateBothEarlyStrategy(higherEarner, lowerEarner, portfolioValue, monthlyExpenses, investmentReturn, inflationRate, ssInflation, depletionScenario, yearsToProject);
+            const optimalStrategy = calculateOptimalCoupleStrategy(higherEarner, lowerEarner, portfolioValue, monthlyExpenses, investmentReturn, inflationRate, ssInflation, depletionScenario, yearsToProject);
+            const bothDelayStrategy = calculateBothDelayStrategy(higherEarner, lowerEarner, portfolioValue, monthlyExpenses, investmentReturn, inflationRate, ssInflation, depletionScenario, yearsToProject);
+
+            const strategies = [bothEarlyStrategy, optimalStrategy, bothDelayStrategy];
+            strategies.sort((a, b) => b.totalWealth - a.totalWealth);
+            
+            displayCoupleResults(strategies, investmentReturn, inflationRate, ssInflation, depletionScenario, yearsToProject, higherEarner, lowerEarner);
+        }
+
+        function calculateBothEarlyStrategy(higherEarner, lowerEarner, portfolioValue, monthlyExpenses, investmentReturn, inflationRate, ssInflation, depletionScenario, yearsToProject) {
+            // Each spouse can only claim when they reach 62
+            const higherStartAge = Math.max(62, higherEarner.age);
+            const lowerStartAge = Math.max(62, lowerEarner.age);
+            
+            const higherBenefit = calculateBenefit(higherStartAge, higherEarner.pia, higherEarner.fra);
+            const lowerBenefit = calculateBenefit(lowerStartAge, lowerEarner.pia, lowerEarner.fra);
+            
+            // Calculate years until each spouse can claim
+            const higherYearsUntilClaim = Math.max(0, 62 - higherEarner.age);
+            const lowerYearsUntilClaim = Math.max(0, 62 - lowerEarner.age);
+            
+            let portfolio = portfolioValue;
+            let totalSS = 0;
+            
+            // Phase-based calculation accounting for when each spouse becomes eligible
+            for (let year = 0; year < yearsToProject; year++) {
+                let yearlyBenefit = 0;
+                
+                // Add higher earner benefit if they're eligible (age 62+)
+                if (year >= higherYearsUntilClaim) {
+                    const inflatedHigher = calculateInflatedBenefit(higherBenefit, ssInflation, year - higherYearsUntilClaim);
+                    const depletionAdjustedHigher = applyDepletionScenario(inflatedHigher, higherYearsUntilClaim, year - higherYearsUntilClaim, depletionScenario);
+                    yearlyBenefit += depletionAdjustedHigher * 12;
+                }
+                
+                // Add lower earner benefit if they're eligible (age 62+)
+                if (year >= lowerYearsUntilClaim) {
+                    const inflatedLower = calculateInflatedBenefit(lowerBenefit, ssInflation, year - lowerYearsUntilClaim);
+                    const depletionAdjustedLower = applyDepletionScenario(inflatedLower, lowerYearsUntilClaim, year - lowerYearsUntilClaim, depletionScenario);
+                    yearlyBenefit += depletionAdjustedLower * 12;
+                }
+                
+                totalSS += yearlyBenefit;
+                
+                // Portfolio calculation for this year
+                const monthlyBenefit = yearlyBenefit / 12;
+                const monthlyWithdrawal = Math.max(0, monthlyExpenses - monthlyBenefit);
+                const inflationFactor = Math.pow(1 + inflationRate/100, year);
+                const adjustedWithdrawal = monthlyWithdrawal * inflationFactor;
+                
+                const realReturn = ((1 + investmentReturn/100) / (1 + inflationRate/100) - 1);
+                portfolio = portfolio * (1 + realReturn) - (adjustedWithdrawal * 12);
+                if (portfolio < 0) portfolio = 0;
+            }
+            
+            // Final combined benefit for display (both spouses when they can claim at 62)
+            const finalCombinedBenefit = higherBenefit + lowerBenefit;
+            
+            return {
+                name: "Both Claim Early (When Eligible)",
+                totalWealth: portfolio + totalSS,
+                finalPortfolio: portfolio,
+                totalSS: totalSS,
+                combinedBenefit: finalCombinedBenefit,
+                monthlyWithdrawal: Math.max(0, monthlyExpenses - finalCombinedBenefit),
+                higherBenefit: higherBenefit,
+                lowerBenefit: lowerBenefit,
+                eligibilityNote: (higherYearsUntilClaim > 0 || lowerYearsUntilClaim > 0) ? 
+                    `Higher earner eligible in ${higherYearsUntilClaim} years, Lower earner eligible in ${lowerYearsUntilClaim} years` : 
+                    "Both immediately eligible"
+            };
+        }
+
+        function calculateOptimalCoupleStrategy(higherEarner, lowerEarner, portfolioValue, monthlyExpenses, investmentReturn, inflationRate, ssInflation, depletionScenario, yearsToProject) {
+            // Lower earner claims as early as possible (age 62 or current age if older)
+            const lowerStartAge = Math.max(62, lowerEarner.age);
+            const lowerBenefit = calculateBenefit(lowerStartAge, lowerEarner.pia, lowerEarner.fra);
+            
+            const spousalBenefit = calculateSpousalBenefit(higherEarner.fra, lowerEarner.pia, higherEarner.fra);
+            const higherDelayedBenefit = calculateBenefit(70, higherEarner.pia, higherEarner.fra);
+            
+            // Calculate years until each phase begins
+            const lowerYearsUntilClaim = Math.max(0, 62 - lowerEarner.age);
+            const higherYearsUntilFRA = Math.max(0, higherEarner.fra - higherEarner.age);
+            const higherYearsUntil70 = Math.max(0, 70 - higherEarner.age);
+            
+            let portfolio = portfolioValue;
+            let totalSS = 0;
+            
+            // Year-by-year calculation accounting for eligibility ages
+            for (let year = 0; year < yearsToProject; year++) {
+                let yearlyBenefit = 0;
+                
+                // Lower earner benefit (starts when they reach 62)
+                if (year >= lowerYearsUntilClaim) {
+                    const inflatedLower = calculateInflatedBenefit(lowerBenefit, ssInflation, year - lowerYearsUntilClaim);
+                    const depletionAdjustedLower = applyDepletionScenario(inflatedLower, lowerYearsUntilClaim, year - lowerYearsUntilClaim, depletionScenario);
+                    yearlyBenefit += depletionAdjustedLower * 12;
+                }
+                
+                // Higher earner benefits based on their age
+                const higherCurrentAge = higherEarner.age + year;
+                if (higherCurrentAge >= higherEarner.fra && higherCurrentAge < 70) {
+                    // Spousal benefit phase (FRA to 70)
+                    const inflatedSpousal = calculateInflatedBenefit(spousalBenefit, ssInflation, year - higherYearsUntilFRA);
+                    const depletionAdjustedSpousal = applyDepletionScenario(inflatedSpousal, higherYearsUntilFRA, year - higherYearsUntilFRA, depletionScenario);
+                    yearlyBenefit += depletionAdjustedSpousal * 12;
+                } else if (higherCurrentAge >= 70) {
+                    // Delayed benefit phase (70+)
+                    const inflatedHigher = calculateInflatedBenefit(higherDelayedBenefit, ssInflation, year - higherYearsUntil70);
+                    const depletionAdjustedHigher = applyDepletionScenario(inflatedHigher, higherYearsUntil70, year - higherYearsUntil70, depletionScenario);
+                    yearlyBenefit += depletionAdjustedHigher * 12;
+                }
+                
+                totalSS += yearlyBenefit;
+                
+                // Portfolio calculation for this year
+                const monthlyBenefit = yearlyBenefit / 12;
+                const monthlyWithdrawal = Math.max(0, monthlyExpenses - monthlyBenefit);
+                const inflationFactor = Math.pow(1 + inflationRate/100, year);
+                const adjustedWithdrawal = monthlyWithdrawal * inflationFactor;
+                
+                const realReturn = ((1 + investmentReturn/100) / (1 + inflationRate/100) - 1);
+                portfolio = portfolio * (1 + realReturn) - (adjustedWithdrawal * 12);
+                if (portfolio < 0) portfolio = 0;
+            }
+            
+            // Final combined benefit for display (at end state)
+            const finalCombinedBenefit = lowerBenefit + higherDelayedBenefit;
+            
+            return {
+                name: lowerEarner.name + " Claims Early, " + higherEarner.name + " Delay to 70",
+                totalWealth: portfolio + totalSS,
+                finalPortfolio: portfolio,
+                totalSS: totalSS,
+                combinedBenefit: finalCombinedBenefit,
+                monthlyWithdrawal: Math.max(0, monthlyExpenses - finalCombinedBenefit),
+                higherBenefit: higherDelayedBenefit,
+                lowerBenefit: lowerBenefit,
+                eligibilityNote: lowerYearsUntilClaim > 0 ? 
+                    `${lowerEarner.name} eligible in ${lowerYearsUntilClaim} years` : 
+                    `${lowerEarner.name} immediately eligible`
+            };
+        }
+
+        function calculateBothDelayStrategy(higherEarner, lowerEarner, portfolioValue, monthlyExpenses, investmentReturn, inflationRate, ssInflation, depletionScenario, yearsToProject) {
+            const higherBenefit = calculateBenefit(70, higherEarner.pia, higherEarner.fra);
+            const lowerBenefit = calculateBenefit(70, lowerEarner.pia, lowerEarner.fra);
+            
+            // Each spouse waits until 70, but must be at least 62 to start
+            const higherYearsUntil70 = Math.max(0, 70 - higherEarner.age);
+            const lowerYearsUntil70 = Math.max(0, 70 - lowerEarner.age);
+            
+            let portfolio = portfolioValue;
+            let totalSS = 0;
+            
+            // Year-by-year calculation accounting for when each reaches 70
+            for (let year = 0; year < yearsToProject; year++) {
+                let yearlyBenefit = 0;
+                
+                // Add higher earner benefit if they've reached 70
+                if (year >= higherYearsUntil70) {
+                    const inflatedHigher = calculateInflatedBenefit(higherBenefit, ssInflation, year - higherYearsUntil70);
+                    const depletionAdjustedHigher = applyDepletionScenario(inflatedHigher, higherYearsUntil70, year - higherYearsUntil70, depletionScenario);
+                    yearlyBenefit += depletionAdjustedHigher * 12;
+                }
+                
+                // Add lower earner benefit if they've reached 70
+                if (year >= lowerYearsUntil70) {
+                    const inflatedLower = calculateInflatedBenefit(lowerBenefit, ssInflation, year - lowerYearsUntil70);
+                    const depletionAdjustedLower = applyDepletionScenario(inflatedLower, lowerYearsUntil70, year - lowerYearsUntil70, depletionScenario);
+                    yearlyBenefit += depletionAdjustedLower * 12;
+                }
+                
+                totalSS += yearlyBenefit;
+                
+                // Portfolio calculation for this year
+                const monthlyBenefit = yearlyBenefit / 12;
+                const monthlyWithdrawal = Math.max(0, monthlyExpenses - monthlyBenefit);
+                const inflationFactor = Math.pow(1 + inflationRate/100, year);
+                const adjustedWithdrawal = monthlyWithdrawal * inflationFactor;
+                
+                const realReturn = ((1 + investmentReturn/100) / (1 + inflationRate/100) - 1);
+                portfolio = portfolio * (1 + realReturn) - (adjustedWithdrawal * 12);
+                if (portfolio < 0) portfolio = 0;
+            }
+            
+            // Final combined benefit for display (both at age 70)
+            const finalCombinedBenefit = higherBenefit + lowerBenefit;
+            
+            return {
+                name: "Both Delay Until 70",
+                totalWealth: portfolio + totalSS,
+                finalPortfolio: portfolio,
+                totalSS: totalSS,
+                combinedBenefit: finalCombinedBenefit,
+                monthlyWithdrawal: Math.max(0, monthlyExpenses - finalCombinedBenefit),
+                higherBenefit: higherBenefit,
+                lowerBenefit: lowerBenefit,
+                eligibilityNote: (higherYearsUntil70 > 0 || lowerYearsUntil70 > 0) ? 
+                    `Higher earner waits ${higherYearsUntil70} years, Lower earner waits ${lowerYearsUntil70} years` : 
+                    "Both can claim at 70 immediately"
+            };
+        }
+
+        function displaySingleResults(strategies, investmentReturn, inflationRate, ssInflation, depletionScenario, yearsToProject) {
+            const best = strategies[0];
+            const advantage = best.totalWealth - strategies[1].totalWealth;
+
+            let html = '<div class="winner-banner">';
+            html += '🏆 OPTIMAL STRATEGY: ' + best.name.toUpperCase();
+            html += '<br><small>Total advantage: $' + Math.round(advantage).toLocaleString() + '</small>';
+            html += '</div>';
+
+            html += '<div class="parameter-display">';
+            html += '<strong>Analysis:</strong> ' + yearsToProject + ' years projection with inflation adjustments<br>';
+            html += '<strong>Portfolio:</strong> ' + investmentReturn + '% nominal return, ' + ((((1 + investmentReturn/100) / (1 + inflationRate/100)) - 1) * 100).toFixed(1) + '% real return<br>';
+            html += '<strong>Inflation:</strong> ' + inflationRate + '% general, ' + ssInflation + '% Social Security COLA<br>';
+            if (depletionScenario === 'depletion') {
+                html += '<strong>⚠️ Depletion Scenario:</strong> 23% benefit cut starting in 2034<br>';
+            }
+            html += '<strong>Note:</strong> All values shown in today\'s purchasing power (inflation-adjusted)';
+            html += '</div>';
+
+            html += '<div class="comparison-grid">';
+
+            strategies.forEach(strategy => {
+                const isWinner = strategy === best;
+                html += '<div class="strategy-card' + (isWinner ? ' winner' : '') + '">';
+                html += '<div class="strategy-title">' + strategy.name + '</div>';
+                html += '<div class="total-value">$' + Math.round(strategy.totalWealth).toLocaleString() + '</div>';
+                html += '<div style="text-align: center; color: #666; margin-bottom: 15px;">Total Wealth at Age ' + document.getElementById('lifeExpectancy').value + '</div>';
+                
+                html += '<div class="breakdown">';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Monthly SS Benefit:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.monthlyBenefit).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">SS Benefit Rate:</span>';
+                html += '<span class="breakdown-value">' + Math.round((strategy.monthlyBenefit / parseInt(document.getElementById('pia').value)) * 100) + '% of PIA</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Monthly Portfolio Withdrawal:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.monthlyWithdrawal).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Years Drawing SS:</span>';
+                html += '<span class="breakdown-value">' + (strategy.yearsWithSS || yearsToProject) + ' years</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Remaining Portfolio:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.finalPortfolio).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Total SS Received:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.totalSS).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">TOTAL WEALTH:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.totalWealth).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            });
+
+            html += '</div>';
+
+            html += '<div class="key-insights">';
+            html += '<h3>💡 Key Insights</h3>';
+            html += '<div class="insight-item">';
+            html += '<strong>Portfolio Impact:</strong> ' + best.name + ' preserves more of your investment portfolio';
+            html += '</div>';
+            html += '<div class="insight-item">';
+            html += '<strong>Inflation Protection:</strong> Social Security provides automatic COLA adjustments (' + ssInflation + '%) while portfolio withdrawals must increase with inflation (' + inflationRate + '%)';
+            html += '</div>';
+            html += '<div class="insight-item">';
+            html += '<strong>Real vs Nominal Returns:</strong> Your ' + investmentReturn + '% portfolio return becomes ' + ((((1 + investmentReturn/100) / (1 + inflationRate/100)) - 1) * 100).toFixed(1) + '% after accounting for ' + inflationRate + '% inflation';
+            html += '</div>';
+            html += '<div class="insight-item">';
+            if (depletionScenario === 'depletion') {
+                html += '<strong>🚨 Trust Fund Depletion Impact:</strong> The 2034 benefit cuts significantly favor claiming early to lock in higher benefits before the reduction';
+            } else {
+                html += '<strong>Trust Fund Stability:</strong> Analysis assumes current benefit levels remain unchanged throughout retirement';
+            }
+            html += '</div>';
+            html += '<div class="insight-item">';
+            html += '<strong>Investment Return Sensitivity:</strong> ';
+            if (investmentReturn >= 8) {
+                html += 'High returns favor early claiming to preserve portfolio growth';
+            } else if (investmentReturn <= 4) {
+                html += 'Low returns favor delaying for guaranteed Social Security increases';
+            } else {
+                html += 'Moderate returns make the choice more balanced';
+            }
+            html += '</div>';
+            html += '<div class="insight-item">';
+            html += '<strong>Portfolio Withdrawal:</strong> ' + best.name + ' requires only $' + Math.round(best.monthlyWithdrawal).toLocaleString() + '/month in portfolio withdrawals vs expenses of $' + parseInt(document.getElementById('monthlyExpenses').value).toLocaleString() + '/month';
+            html += '</div>';
+            html += '<div class="insight-item">';
+            html += '<strong>Longevity Protection:</strong> ';
+            if (best.age === 70) {
+                html += 'Delaying until 70 maximizes monthly benefits for life, providing the best protection against outliving your money';
+            } else if (best.age === 62) {
+                html += 'Early claiming provides immediate income but lower lifetime benefits if you live a long time';
+            } else {
+                html += 'This strategy balances immediate needs with benefit optimization';
+            }
+            html += '</div>';
+            html += '<div class="insight-item">';
+            if (depletionScenario === 'depletion') {
+                html += '<strong>Depletion Strategy:</strong> With projected 2034 benefit cuts, claiming earlier becomes more attractive to maximize benefits before the reduction takes effect';
+            } else {
+                html += '<strong>Research Finding:</strong> For singles with average life expectancy, the present value of benefits is approximately the same regardless of claiming age. The choice depends on your priorities: portfolio preservation vs. longevity protection.';
+            }
+            html += '</div>';
+            html += '</div>';
+
+            document.getElementById('results').innerHTML = html;
+        }
+
+        function displayCoupleResults(strategies, investmentReturn, inflationRate, ssInflation, depletionScenario, yearsToProject, higherEarner, lowerEarner) {
+            const best = strategies[0];
+            const advantage = best.totalWealth - strategies[1].totalWealth;
+
+            let html = '<div class="winner-banner">';
+            html += '🏆 OPTIMAL STRATEGY: ' + best.name.toUpperCase();
+            html += '<br><small>Total advantage: $' + Math.round(advantage).toLocaleString() + '</small>';
+            html += '</div>';
+
+            html += '<div class="parameter-display">';
+            html += '<strong>Couple Analysis:</strong> ' + yearsToProject + ' years projection with inflation adjustments<br>';
+            html += '<strong>Portfolio:</strong> ' + investmentReturn + '% nominal, ' + ((((1 + investmentReturn/100) / (1 + inflationRate/100)) - 1) * 100).toFixed(1) + '% real return<br>';
+            html += '<strong>Higher Earner:</strong> ' + higherEarner.name + ' (PIA: $' + higherEarner.pia.toLocaleString() + ')<br>';
+            html += '<strong>Lower Earner:</strong> ' + lowerEarner.name + ' (PIA: $' + lowerEarner.pia.toLocaleString() + ')<br>';
+            html += '<strong>Inflation:</strong> ' + inflationRate + '% general, ' + ssInflation + '% SS COLA<br>';
+            if (depletionScenario === 'depletion') {
+                html += '<strong>⚠️ Depletion Scenario:</strong> 23% benefit cut starting in 2034<br>';
+            }
+            html += '<strong>Note:</strong> All values in today\'s purchasing power';
+            html += '</div>';
+
+            html += '<div class="comparison-grid">';
+
+            strategies.forEach(strategy => {
+                const isWinner = strategy === best;
+                html += '<div class="strategy-card' + (isWinner ? ' winner' : '') + '">';
+                html += '<div class="strategy-title">' + strategy.name + '</div>';
+                html += '<div class="total-value">$' + Math.round(strategy.totalWealth).toLocaleString() + '</div>';
+                html += '<div style="text-align: center; color: #666; margin-bottom: 15px;">Total Wealth at Joint Life Expectancy</div>';
+                
+                html += '<div class="breakdown">';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Combined Monthly Benefit:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.combinedBenefit).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Higher Earner Benefit:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.higherBenefit).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Lower Earner Benefit:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.lowerBenefit).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Monthly Portfolio Withdrawal:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.monthlyWithdrawal).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Remaining Portfolio:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.finalPortfolio).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">Total SS Received:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.totalSS).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '<div class="breakdown-item">';
+                html += '<span class="breakdown-label">TOTAL WEALTH:</span>';
+                html += '<span class="breakdown-value">$' + Math.round(strategy.totalWealth).toLocaleString() + '</span>';
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            });
+
+            html += '</div>';
+
+            html += '<div class="key-insights">';
+            html += '<h3>💡 Couple Strategy Insights</h3>';
+            html += '<div class="insight-item">';
+            html += '<strong>Optimal Approach:</strong> Research shows lower earners should typically claim early while higher earners delay to maximize survivor benefits';
+            html += '</div>';
+            html += '<div class="insight-item">';
+            html += '<strong>Survivor Protection:</strong> The higher earner\'s delayed benefits become the survivor benefit, protecting the remaining spouse';
+            html += '</div>';
+            html += '<div class="insight-item">';
+            html += '<strong>Joint Life Expectancy:</strong> Couples must plan for the possibility that one spouse lives much longer than expected';
+            html += '</div>';
+            html += '<div class="insight-item">';
+            html += '<strong>Claim-Now-More-Later:</strong> Higher earners can claim spousal benefits at FRA while delaying their own benefits until 70';
+            html += '</div>';
+            html += '<div class="insight-item">';
+            html += '<strong>Portfolio Efficiency:</strong> ' + best.name + ' requires $' + Math.round(best.monthlyWithdrawal).toLocaleString() + '/month in withdrawals vs $' + parseInt(document.getElementById('monthlyExpenses').value).toLocaleString() + '/month in expenses';
+            html += '</div>';
+            if (depletionScenario === 'depletion') {
+                html += '<div class="insight-item">';
+                html += '<strong>Timing Advantage:</strong> Couples should especially consider claiming strategies that maximize benefits before 2034, when trust fund depletion could reduce payments by 23%';
+                html += '</div>';
+            }
+            html += '</div>';
+
+            document.getElementById('results').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
