@@ -545,10 +545,12 @@
             let portfolio = params.initialPortfolio;
             let totalSSNominal = 0;
             const startYear = new Date().getFullYear(); // Dynamic start year
-            
+
             // Loop through months until life expectancy
             const monthsToSimulate = params.yearsToProject * 12;
             let wealthPath = []; // Track annual wealth for break-even calc
+            let portfolioAtSSStart = null;  // Nominal portfolio when first SS income received
+            let monthsToSSStart = null;
 
             for (let m = 0; m < monthsToSimulate; m++) {
                 const currentYear = startYear + Math.floor(m / 12);
@@ -649,6 +651,12 @@
 
                 totalSSNominal += monthlySS;
 
+                // Capture portfolio value the moment SS income first arrives
+                if (monthlySS > 0 && portfolioAtSSStart === null) {
+                    portfolioAtSSStart = portfolio;
+                    monthsToSSStart = m;
+                }
+
                 // 3. Portfolio Withdrawal
                 const withdrawalNeeded = Math.max(0, currentMonthlyExpenses - monthlySS);
 
@@ -674,7 +682,9 @@
                 finalPortfolioPV: presentValuePortfolio,
                 totalSSNominal: totalSSNominal,
                 monthlyInitialWithdrawal: Math.max(0, params.baseMonthlyExpenses - (params.baseBenefit || 0)),
-                wealthPath: wealthPath // Array of yearly nominal portfolio values
+                wealthPath: wealthPath,
+                portfolioAtSSStart: portfolioAtSSStart !== null ? portfolioAtSSStart : params.initialPortfolio,
+                monthsToSSStart: monthsToSSStart !== null ? monthsToSSStart : 0
             };
         }
 
@@ -750,14 +760,25 @@
                 const discountFactor = Math.pow(1 + inputs.inflationRate/100, userLifeExpectancyYears);
                 const pvAtLifeEx = nominalAtLifeEx / discountFactor;
 
+                const yearsUntilSS = Math.max(0, strat.claimAge - inputs.currentAge);
+                const inflFactor = Math.pow(1 + inputs.inflationRate / 100, yearsUntilSS);
+                const monthlySS_real = baseBenefit / inflFactor;
+                const portfolioAtSSStartPV = simResults.portfolioAtSSStart / inflFactor;
+
                 return {
                     name: strat.name,
-                    finalPortfolio: pvAtLifeEx, // Value at Life Expectancy
+                    finalPortfolio: pvAtLifeEx,
                     totalSS: simResults.totalSSNominal,
                     initialBenefit: baseBenefit,
-                    wealthPath: simResults.wealthPath, // Full path to 100
+                    wealthPath: simResults.wealthPath,
                     type: strat.type,
-                    isWinner: false
+                    isWinner: false,
+                    // --- New tile metrics ---
+                    preSS_monthly: yearsUntilSS > 0 ? inputs.monthlyExpenses : null,
+                    monthlyGap_real: Math.max(0, inputs.monthlyExpenses - monthlySS_real),
+                    portfolioAtSSStartPV: portfolioAtSSStartPV,
+                    monthlySS_real: monthlySS_real,
+                    yearsSS: Math.max(0, inputs.lifeExpectancy - Math.max(strat.claimAge, inputs.currentAge))
                 };
             });
 
@@ -842,6 +863,27 @@
                 const discountFactor = Math.pow(1 + inputs.inflationRate/100, actualYearsToProject);
                 const pvAtLifeEx = nominalAtLifeEx / discountFactor;
 
+                // Calendar years until each spouse's SS starts
+                const p1YearsUntilSS = Math.max(0, config.p1Claim - inputs.currentAge);
+                const p2YearsUntilSS = Math.max(0, config.p2Claim - spouseAge);
+                const yearsUntilFirstSS = Math.min(p1YearsUntilSS, p2YearsUntilSS);
+                const yearsUntilBothSS  = Math.max(p1YearsUntilSS, p2YearsUntilSS);
+
+                // Real (today's $) value of each benefit at their respective claim dates
+                const p1Real = p1Base / Math.pow(1 + inputs.inflationRate / 100, p1YearsUntilSS);
+                const p2Real = p2Base / Math.pow(1 + inputs.inflationRate / 100, p2YearsUntilSS);
+                const combinedSSReal = p1Real + p2Real;
+
+                // Portfolio PV when first SS income arrives
+                const inflFactorFirst = Math.pow(1 + inputs.inflationRate / 100, yearsUntilFirstSS);
+                const portfolioAtSSStartPV = simResults.portfolioAtSSStart / inflFactorFirst;
+
+                // Years drawing SS: from first SS check to end of last survivor
+                const p1CalendarYearsLeft = inputs.lifeExpectancy - inputs.currentAge;
+                const p2CalendarYearsLeft = spouseLife - spouseAge;
+                const lastSurvivorYears = Math.max(p1CalendarYearsLeft, p2CalendarYearsLeft);
+                const yearsSS = Math.max(0, lastSurvivorYears - yearsUntilFirstSS);
+
                 return {
                     name: name,
                     finalPortfolio: pvAtLifeEx,
@@ -855,7 +897,13 @@
                     totalSS: simResults.totalSSNominal,
                     wealthPath: simResults.wealthPath,
                     type: config.type,
-                    isWinner: false
+                    isWinner: false,
+                    // --- New tile metrics ---
+                    preSS_monthly: yearsUntilFirstSS > 0 ? inputs.monthlyExpenses : null,
+                    monthlyGap_real: Math.max(0, inputs.monthlyExpenses - combinedSSReal),
+                    portfolioAtSSStartPV: portfolioAtSSStartPV,
+                    monthlySS_real: combinedSSReal,
+                    yearsSS: yearsSS
                 };
             });
 
@@ -981,20 +1029,36 @@
                 html += `
                 <div class="strategy-card ${s.isWinner ? 'winner' : ''}">
                     <div class="strategy-title">${s.name}</div>
-                    <div style="text-align: center; font-size: 0.9em; color: #777;">Remaining Portfolio (PV)</div>
+                    <div style="text-align: center; font-size: 0.9em; color: #777;">Remaining Portfolio (Today's $)</div>
                     <div class="total-value">$${Math.round(s.finalPortfolio).toLocaleString()}</div>
-                    
+
                     <div class="breakdown">
                         ${benefitDisplay}
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Monthly SS (Today's $):</span>
+                            <span class="breakdown-value">$${Math.round(s.monthlySS_real).toLocaleString()}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Pre-SS Monthly Draw:</span>
+                            <span class="breakdown-value">${s.preSS_monthly !== null ? '$' + Math.round(s.preSS_monthly).toLocaleString() : '—'}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Ongoing Portfolio Gap:</span>
+                            <span class="breakdown-value">$${Math.round(s.monthlyGap_real).toLocaleString()}/mo</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Portfolio When SS Starts:</span>
+                            <span class="breakdown-value">$${Math.round(s.portfolioAtSSStartPV).toLocaleString()}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Years Drawing SS:</span>
+                            <span class="breakdown-value">${Math.round(s.yearsSS)} yrs</span>
+                        </div>
                         <div class="breakdown-item">
                             <span class="breakdown-label">Lifetime SS (Nominal):</span>
                             <span class="breakdown-value">$${Math.round(s.totalSS).toLocaleString()}</span>
                         </div>
-                        <div class="breakdown-item">
-                            <span class="breakdown-label">Result in Today's Dollars:</span>
-                            <span class="breakdown-value">Yes</span>
-                        </div>
-                         <div style="margin-top: 10px; font-size: 0.8rem; color: #666; text-align: center;">
+                        <div style="margin-top: 10px; font-size: 0.8rem; color: #666; text-align: center;">
                             ${s.finalPortfolio <= 0 ? '⚠️ Portfolio Depleted' : '✅ Portfolio Survives'}
                         </div>
                     </div>
