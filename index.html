@@ -16,7 +16,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-            padding-bottom: 0; /* Adjust for footer */
         }
 
         .container {
@@ -416,10 +415,10 @@
                     <label for="ssDepletionScenario">Social Security Trust Fund Scenario</label>
                     <select id="ssDepletionScenario">
                         <option value="current">Current Law (No Changes)</option>
-                        <option value="depletion">2034 Trust Fund Depletion (23% Benefit Cut)</option>
-                        <option value="insolvency">2034 Social Security Insolvency (100% Benefit Loss)</option>
+                        <option value="depletion">2032 Trust Fund Depletion (23% Benefit Cut)</option>
+                        <option value="insolvency">2032 Social Security Insolvency (100% Benefit Loss)</option>
                     </select>
-                    <small style="color: #666; font-size: 0.85em;">Trustees project trust fund depletion by 2034</small>
+                    <small style="color: #666; font-size: 0.85em;">Trustees project trust fund depletion by 2032</small>
                 </div>
 
                 <div class="spouse-fields" id="spouseLifeFields" style="display: none;">
@@ -454,7 +453,7 @@
                     <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin: 15px 0;">
                         <h4 style="color: #856404; margin: 0 0 10px 0;">🚨 Future Economic Uncertainties</h4>
                         <p style="margin: 0 0 10px 0; font-size: 0.9rem; color: #856404;"><strong>The Urgency of Action:</strong> The window for implementing comprehensive Social Security reforms is narrowing as AI adoption accelerates. Unlike traditional economic downturns that allow for sector-based recovery, AI-driven unemployment presents unique challenges because displaced workers often need extensive retraining to shift into entirely new fields.</p>
-                        <p style="margin: 0; font-size: 0.9rem; color: #856404;">Without intervention, the Social Security system faces potential collapse from insufficient workers contributing to fund benefits - a scenario that could materialize much faster than the already-projected 2034 shortfall date.</p>
+                        <p style="margin: 0; font-size: 0.9rem; color: #856404;">Without intervention, the Social Security system faces potential collapse from insufficient workers contributing to fund benefits - a scenario that could materialize much faster than the already-projected 2032 shortfall date.</p>
                     </div>
 
                     <div style="background: #e8f4fd; border: 2px solid #3498db; border-radius: 8px; padding: 15px; margin: 15px 0;">
@@ -472,7 +471,7 @@
     <div style="background: #f8f9fa; border-top: 1px solid #dee2e6; padding: 20px; margin-top: 30px; color: #555; font-size: 0.85rem; line-height: 1.4;">
         <div style="max-width: 1200px; margin: 0 auto;">
             <h4 style="color: #2c3e50; margin: 0 0 12px 0; font-size: 1rem;">Important Disclaimers</h4>
-            <p style="margin: 0; text-align: justify;"><strong>Educational Use Only:</strong> This calculator provides estimates for educational purposes and should not replace professional financial advice. Results are based on current Social Security rules and your assumptions, which may change. Investment returns, inflation, and benefit levels are not guaranteed. The 2034 trust fund depletion is a projection that Congress may address. <strong>Consult qualified financial advisors, tax professionals, and the Social Security Administration before making claiming decisions.</strong> Users assume full responsibility for all financial decisions. The creators assume no liability for decisions based on these calculations.</p>
+            <p style="margin: 0; text-align: justify;"><strong>Educational Use Only:</strong> This calculator provides estimates for educational purposes and should not replace professional financial advice. Results are based on current Social Security rules and your assumptions, which may change. Investment returns, inflation, and benefit levels are not guaranteed. The 2032 trust fund depletion is a projection that Congress may address. <strong>Consult qualified financial advisors, tax professionals, and the Social Security Administration before making claiming decisions.</strong> Users assume full responsibility for all financial decisions. The creators assume no liability for decisions based on these calculations.</p>
         </div>
     </div>
 
@@ -545,7 +544,7 @@
         function runSimulation(params) {
             let portfolio = params.initialPortfolio;
             let totalSSNominal = 0;
-            const startYear = 2025; // Deterministic start
+            const startYear = new Date().getFullYear(); // Dynamic start year
             
             // Loop through months until life expectancy
             const monthsToSimulate = params.yearsToProject * 12;
@@ -573,7 +572,7 @@
                     if (currentAge >= params.claimAge) {
                         let benefit = params.baseBenefit * ssColaFactor;
                         // Apply Depletion Scenario
-                        if (currentYear >= 2034) {
+                        if (currentYear >= 2032) {
                             if (params.depletionScenario === 'depletion') benefit *= 0.77;
                             if (params.depletionScenario === 'insolvency') benefit = 0;
                         }
@@ -600,6 +599,21 @@
                         p2Benefit = params.p2.baseBenefit * ssColaFactor;
                     }
 
+                    // Apply spousal benefit: each spouse receives max(own benefit, spousal benefit).
+                    // Spousal benefit requires the primary earner to have already claimed.
+                    const p1HasClaimed = (p1Age/12) >= params.p1.claimAge;
+                    const p2HasClaimed = (p2Age/12) >= params.p2.claimAge;
+                    if (p1Alive && p2Alive) {
+                        if (p2HasClaimed && p1HasClaimed) {
+                            const p2Spousal = getSpousalBenefitForAge(params.p1.pia, params.p2.fra, params.p2.claimAge) * ssColaFactor;
+                            p2Benefit = Math.max(p2Benefit, p2Spousal);
+                        }
+                        if (p1HasClaimed && p2HasClaimed) {
+                            const p1Spousal = getSpousalBenefitForAge(params.p2.pia, params.p1.fra, params.p1.claimAge) * ssColaFactor;
+                            p1Benefit = Math.max(p1Benefit, p1Spousal);
+                        }
+                    }
+
                     // Handle Survivor Logic (Highest earner's benefit carries over)
                     if (!p1Alive && p2Alive) {
                         // P2 is survivor. Gets higher of Own or P1's benefit (if P1 had claimed)
@@ -620,7 +634,7 @@
                     }
 
                     // Apply Depletion
-                    if (currentYear >= 2034) {
+                    if (currentYear >= 2032) {
                         if (params.depletionScenario === 'depletion') {
                             p1Benefit *= 0.77;
                             p2Benefit *= 0.77;
@@ -664,10 +678,29 @@
             };
         }
 
+        // --- Helpers ---
+
+        function formatAge(decimalAge) {
+            const years = Math.floor(decimalAge);
+            const months = Math.round((decimalAge - years) * 12);
+            return months > 0 ? `${years} + ${months}mo` : `${years}`;
+        }
+
+        function effectiveClaimLabel(claimAge, currentAge) {
+            // If the claim age is already in the past, show "Now" to avoid misleading labels
+            return claimAge <= currentAge ? `Now (${claimAge})` : claimAge;
+        }
+
         // --- Strategy Builders ---
 
         function calculateStrategy() {
             try {
+                const currentAge = parseInt(document.getElementById('currentAge').value);
+                const lifeExpectancy = parseInt(document.getElementById('lifeExpectancy').value);
+                if (lifeExpectancy <= currentAge) {
+                    alert("Life expectancy must be greater than your current age.");
+                    return;
+                }
                 const analysisType = document.getElementById('analysisType').value;
                 if (analysisType === 'single') calculateSingleStrategy();
                 else calculateCoupleStrategy();
@@ -685,7 +718,7 @@
 
             const strategies = [
                 { name: "Claim Early (62)", claimAge: 62, type: 'early' },
-                { name: "Claim at FRA (" + fra + ")", claimAge: fra, type: 'fra' },
+                { name: "Claim at FRA (" + formatAge(fra) + ")", claimAge: fra, type: 'fra' },
                 { name: "Delay to 70", claimAge: 70, type: 'delay' }
             ];
 
@@ -812,11 +845,13 @@
                 return {
                     name: name,
                     finalPortfolio: pvAtLifeEx,
-                    initialBenefit: p1Base + p2Base, 
-                    p1Benefit: p1Base, // New detailed field
-                    p2Benefit: p2Base, // New detailed field
-                    p1ClaimAge: config.p1Claim, // New detailed field
-                    p2ClaimAge: config.p2Claim, // New detailed field
+                    initialBenefit: p1Base + p2Base,
+                    p1Benefit: p1Base,
+                    p2Benefit: p2Base,
+                    p1ClaimAge: config.p1Claim,
+                    p2ClaimAge: config.p2Claim,
+                    p1CurrentAge: inputs.currentAge,
+                    p2CurrentAge: spouseAge,
                     totalSS: simResults.totalSSNominal,
                     wealthPath: simResults.wealthPath,
                     type: config.type,
@@ -832,28 +867,29 @@
         }
 
         function findBreakEvenAge(results, startAge) {
-            // We want to compare the "Late" strategy vs "Early" strategy
-            // Late typically costs more up front (lower wealth early) but catches up
-            
-            // Find "Early" strategy
+            // Compare "Early" strategy vs the best challenger (Split or Delay)
             const earlyStrat = results.find(r => r.type === 'early');
-            // Find "Delay" or "Split" strategy (whichever is the challenger)
             let lateStrat = results.find(r => r.type === 'split');
             if (!lateStrat) lateStrat = results.find(r => r.type === 'delay');
 
             if (!earlyStrat || !lateStrat) return null;
 
-            // Iterate through years
-            for (let i = 0; i < earlyStrat.wealthPath.length; i++) {
-                const earlyWealth = earlyStrat.wealthPath[i];
-                const lateWealth = lateStrat.wealthPath[i];
+            // Find the first year the late strategy pulls ahead and stays ahead
+            // for at least 3 consecutive years (avoids false crossovers).
+            const minStreak = 3;
+            let streak = 0;
+            let crossoverIndex = -1;
 
-                // If late strategy wealth overtakes early strategy wealth
-                if (lateWealth > earlyWealth) {
-                    // Check if it stays higher (simple check)
-                    if (i+1 < earlyStrat.wealthPath.length && lateStrat.wealthPath[i+1] > earlyStrat.wealthPath[i+1]) {
-                        return startAge + i + 1; // +1 because index 0 is end of year 1
+            for (let i = 0; i < earlyStrat.wealthPath.length; i++) {
+                if (lateStrat.wealthPath[i] > earlyStrat.wealthPath[i]) {
+                    if (streak === 0) crossoverIndex = i;
+                    streak++;
+                    if (streak >= minStreak) {
+                        return startAge + crossoverIndex + 1; // index 0 = end of year 1
                     }
+                } else {
+                    streak = 0;
+                    crossoverIndex = -1;
                 }
             }
             return "> 100";
@@ -927,11 +963,11 @@
                 if (isCouple) {
                     benefitDisplay = `
                     <div class="breakdown-item">
-                        <span class="breakdown-label">You (Age ${s.p1ClaimAge}):</span>
+                        <span class="breakdown-label">You (Age ${effectiveClaimLabel(s.p1ClaimAge, s.p1CurrentAge)}):</span>
                         <span class="breakdown-value">$${Math.round(s.p1Benefit).toLocaleString()}</span>
                     </div>
                     <div class="breakdown-item">
-                        <span class="breakdown-label">Spouse (Age ${s.p2ClaimAge}):</span>
+                        <span class="breakdown-label">Spouse (Age ${effectiveClaimLabel(s.p2ClaimAge, s.p2CurrentAge)}):</span>
                         <span class="breakdown-value">$${Math.round(s.p2Benefit).toLocaleString()}</span>
                     </div>`;
                 } else {
@@ -984,7 +1020,7 @@
             
             if (inputs.depletionScenario !== 'current') {
                 html += `<div class="insight-item">
-                    <strong>Trust Fund Impact:</strong> Because you selected a depletion scenario (${inputs.depletionScenario}), claiming earlier tends to look mathematically better because you lock in money before the cuts occur in 2034.
+                    <strong>Trust Fund Impact:</strong> Because you selected a depletion scenario (${inputs.depletionScenario}), claiming earlier tends to look mathematically better because you lock in money before the cuts occur in 2032.
                 </div>`;
             }
 
