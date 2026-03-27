@@ -412,13 +412,14 @@
                 </div>
 
                 <div class="input-group">
-                    <label for="ssDepletionScenario">Social Security Trust Fund Scenario</label>
+                    <label for="ssDepletionScenario">Social Security Reform Scenario</label>
                     <select id="ssDepletionScenario">
                         <option value="current">Current Law (No Changes)</option>
                         <option value="depletion">2032 Trust Fund Depletion (23% Benefit Cut)</option>
                         <option value="insolvency">2032 Social Security Insolvency (100% Benefit Loss)</option>
+                        <option value="sfl">Six-Figure Limit (SFL) — Benefit Cap Reform</option>
                     </select>
-                    <small style="color: #666; font-size: 0.85em;">Trustees project trust fund depletion by 2032</small>
+                    <small style="color: #666; font-size: 0.85em;">Trustees project trust fund depletion by 2032. SFL caps annual benefits: single $50K, couple at 62 $70K, couple at 70 $100K (interpolated by claim age).</small>
                 </div>
 
                 <div class="spouse-fields" id="spouseLifeFields" style="display: none;">
@@ -647,6 +648,21 @@
                     }
 
                     monthlySS = p1Benefit + p2Benefit;
+                }
+
+                // Apply Six-Figure Limit (SFL) cap
+                // Single: $50K/yr cap. Couple: $70K/yr (both at 62) to $100K/yr (both at 70), interpolated by avg claim age.
+                if (params.depletionScenario === 'sfl') {
+                    let sflMonthlyCap;
+                    if (params.type === 'single') {
+                        sflMonthlyCap = 50000 / 12;
+                    } else {
+                        const avgClaimAge = (params.p1.claimAge + params.p2.claimAge) / 2;
+                        const t = Math.min(1, Math.max(0, (avgClaimAge - 62) / (70 - 62)));
+                        const annualCap = 70000 + t * (100000 - 70000);
+                        sflMonthlyCap = annualCap / 12;
+                    }
+                    monthlySS = Math.min(monthlySS, sflMonthlyCap);
                 }
 
                 totalSSNominal += monthlySS;
@@ -1082,9 +1098,15 @@
                     <strong>Inflation Reality:</strong> A ${inputs.investmentReturn}% return with ${inputs.inflationRate}% inflation is only a ${(inputs.investmentReturn - inputs.inflationRate).toFixed(1)}% Real Return. This calculator accounts for that drag.
                 </div>`;
             
-            if (inputs.depletionScenario !== 'current') {
+            if (inputs.depletionScenario === 'depletion' || inputs.depletionScenario === 'insolvency') {
                 html += `<div class="insight-item">
                     <strong>Trust Fund Impact:</strong> Because you selected a depletion scenario (${inputs.depletionScenario}), claiming earlier tends to look mathematically better because you lock in money before the cuts occur in 2032.
+                </div>`;
+            }
+
+            if (inputs.depletionScenario === 'sfl') {
+                html += `<div class="insight-item">
+                    <strong>Six-Figure Limit (SFL) Impact:</strong> Under this proposed reform, annual SS benefits are capped — $50,000 for singles, $70,000 for couples who both claim at 62, up to $100,000 for couples who both delay to 70. High earners are most affected. Claiming early locks in a lower benefit, which may fall under the cap and avoid any reduction — making early claiming more attractive for high-benefit households under SFL.
                 </div>`;
             }
 
