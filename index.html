@@ -868,6 +868,13 @@
                 if(config.isHybrid) {
                     name = `Split: ${p1.pia > p2.pia ? 'You Delay, Spouse Early' : 'You Early, Spouse Delay'}`;
                 }
+                // Clarify staggered starts in the strategy name when spouses claim years apart
+                const p1YearsUntilSSLabel = Math.max(0, config.p1Claim - inputs.currentAge);
+                const p2YearsUntilSSLabel = Math.max(0, config.p2Claim - spouseAge);
+                if (p1YearsUntilSSLabel !== p2YearsUntilSSLabel) {
+                    const gapYears = Math.abs(p1YearsUntilSSLabel - p2YearsUntilSSLabel);
+                    name += ` (${gapYears}-yr stagger)`;
+                }
 
                 // Calculate PV at Joint Life Expectancy (input)
                 const jointLifeExpectancy = Math.max(inputs.lifeExpectancy, spouseLife);
@@ -919,7 +926,11 @@
                     monthlyGap_real: Math.max(0, inputs.monthlyExpenses - combinedSSReal),
                     portfolioAtSSStartPV: portfolioAtSSStartPV,
                     monthlySS_real: combinedSSReal,
-                    yearsSS: yearsSS
+                    yearsSS: yearsSS,
+                    // Phased SS: when spouses start at different times, show income in two stages
+                    phase1Duration: yearsUntilBothSS - yearsUntilFirstSS,
+                    phase1SS_real: p1YearsUntilSS <= p2YearsUntilSS ? p1Real : p2Real,
+                    phase2SS_real: combinedSSReal
                 };
             });
 
@@ -996,7 +1007,7 @@
                 if (userExpectedAge >= breakEvenAge) {
                     message = `Since you expect to live to <b>${userExpectedAge}</b>, waiting pays off.`;
                 } else {
-                    message = `You expect to live to <b>${userExpectedAge}</b>, which is BEFORE this break-even point. Careful!`;
+                    message = `You expect to live to <b>${userExpectedAge}</b>, which is BEFORE the break-even point. This means delaying Social Security may cost you money — you'd forgo years of early payments but not live long enough to recoup them through the higher delayed benefit.`;
                 }
 
                 html += `<div class="breakeven-box">
@@ -1050,10 +1061,19 @@
 
                     <div class="breakdown">
                         ${benefitDisplay}
+                        ${isCouple && s.phase1Duration > 0 ? `
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">SS Phase 1 — 1 spouse (${Math.round(s.phase1Duration)} yrs):</span>
+                            <span class="breakdown-value">$${Math.round(s.phase1SS_real).toLocaleString()}/mo</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">SS Phase 2 — both collecting:</span>
+                            <span class="breakdown-value">$${Math.round(s.phase2SS_real).toLocaleString()}/mo</span>
+                        </div>` : `
                         <div class="breakdown-item">
                             <span class="breakdown-label">Monthly SS (Today's $):</span>
                             <span class="breakdown-value">$${Math.round(s.monthlySS_real).toLocaleString()}</span>
-                        </div>
+                        </div>`}
                         <div class="breakdown-item">
                             <span class="breakdown-label">Pre-SS Monthly Draw:</span>
                             <span class="breakdown-value">${s.preSS_monthly !== null ? '$' + Math.round(s.preSS_monthly).toLocaleString() : '—'}</span>
