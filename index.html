@@ -286,6 +286,16 @@
             margin: 0 auto;
         }
 
+        .warning-banner {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            color: #856404;
+            font-size: 0.9rem;
+        }
+
         @media (max-width: 1200px) {
             .content {
                 grid-template-columns: 1fr;
@@ -315,7 +325,7 @@
             <h1>Social Security vs Investment Portfolio Calculator</h1>
             <p>Should you take Social Security early to preserve your investment portfolio, or delay for higher benefits?</p>
         </div>
-        
+
         <div class="content">
             <div class="inputs">
                 <div class="input-group">
@@ -419,7 +429,7 @@
                         <option value="insolvency">2032 Social Security Insolvency (100% Benefit Loss)</option>
                         <option value="sfl">Six-Figure Limit (SFL) — Benefit Cap Reform</option>
                     </select>
-                    <small style="color: #666; font-size: 0.85em;">Trustees project trust fund depletion by 2032. SFL caps annual benefits: single $50K, couple at 62 $70K, couple at 70 $100K (interpolated by claim age).</small>
+                    <small style="color: #666; font-size: 0.85em;">Trustees project trust fund depletion by 2032. SFL caps annual benefits: single $50K, couple at 62 $70K, couple at 70 $100K (interpolated by claim age). SFL cap is applied in nominal dollars and does not inflate over time.</small>
                 </div>
 
                 <div class="spouse-fields" id="spouseLifeFields" style="display: none;">
@@ -435,11 +445,11 @@
             <div class="results" id="results">
                 <div class="parameter-display">
                     <h3>📊 How This Calculator Works</h3>
-                    
+
                     <p style="margin-bottom: 10px; margin-top: 10px;"><strong>Early Claiming:</strong> Take Social Security now → withdraw less from your portfolio → more money stays invested.</p>
                     <p style="margin-bottom: 10px;"><strong>Delayed Claiming:</strong> Wait for Social Security → withdraw more from your portfolio → less money stays invested.</p>
                     <p><strong>The Goal:</strong> Find the strategy that leaves you with the most total wealth (in today's purchasing power) at your life expectancy.</p>
-                    
+
                     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
 
                     <p><strong>Technical Methodology:</strong> This calculator performs a <strong>Nominal Cash Flow Analysis</strong> converted to <strong>Present Value (PV)</strong>.</p>
@@ -448,7 +458,11 @@
                         <li><strong>Step 2:</strong> We determine if your portfolio can cover the gap between expenses and Social Security.</li>
                         <li><strong>Step 3:</strong> We discount the final remaining portfolio value back to <strong>Today's Dollars</strong> so you can understand its real purchasing power.</li>
                     </ul>
-                    
+
+                    <br>
+
+                    <p><strong>Couple Simulations:</strong> The simulation uses your actual life expectancies to model survivor benefits — when one spouse passes away, the survivor receives the higher of their own or the deceased's benefit, starting the month of death.</p>
+
                     <br>
 
                     <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin: 15px 0;">
@@ -460,7 +474,7 @@
                     <div style="background: #e8f4fd; border: 2px solid #3498db; border-radius: 8px; padding: 15px; margin: 15px 0;">
                         <h4 style="color: #2c3e50; margin: 0 0 10px 0;">🧮 Accuracy Note</h4>
                         <p style="margin: 0; font-size: 0.9rem; color: #2c3e50;">
-                            Many simple calculators make the mistake of subtracting inflation from investment returns (Real Return) but then inflating expenses again, counting inflation twice. 
+                            Many simple calculators make the mistake of subtracting inflation from investment returns (Real Return) but then inflating expenses again, counting inflation twice.
                             This calculator separates Investment Growth (Nominal) from Expense Inflation to provide accurate Actuarial outcomes.
                         </p>
                     </div>
@@ -480,7 +494,7 @@
         function toggleSpouseFields() {
             const analysisType = document.getElementById('analysisType').value;
             const spouseFields = document.querySelectorAll('.spouse-fields');
-            
+
             spouseFields.forEach(field => {
                 field.style.display = analysisType === 'couple' ? 'block' : 'none';
             });
@@ -490,15 +504,12 @@
 
         function getBenefitForAge(pia, fra, claimAge) {
             if (claimAge < 62) return 0;
-            if (claimAge > 70) claimAge = 70; // No credit after 70
+            if (claimAge > 70) claimAge = 70;
 
             let monthsDiff = Math.round((claimAge - fra) * 12);
             let factor = 1.0;
 
             if (monthsDiff < 0) {
-                // Early claiming reduction
-                // 5/9 of 1% for first 36 months
-                // 5/12 of 1% for additional months
                 const monthsEarly = Math.abs(monthsDiff);
                 let reduction = 0;
                 if (monthsEarly <= 36) {
@@ -508,7 +519,6 @@
                 }
                 factor = 1 - reduction;
             } else if (monthsDiff > 0) {
-                // Delayed retirement credits: 8% per year (2/3 of 1% per month)
                 factor = 1 + (monthsDiff * (2/3) / 100);
             }
 
@@ -517,16 +527,12 @@
 
         function getSpousalBenefitForAge(primaryPia, spouseFra, claimAge) {
             if (claimAge < 62) return 0;
-            // Spousal benefits do NOT grow after FRA
             if (claimAge > spouseFra) claimAge = spouseFra;
 
             let baseSpousal = primaryPia * 0.5;
             let monthsDiff = Math.round((claimAge - spouseFra) * 12);
-            
+
             if (monthsDiff < 0) {
-                // Early spousal reduction
-                // 25/36 of 1% for first 36 months
-                // 5/12 of 1% for additional months
                 const monthsEarly = Math.abs(monthsDiff);
                 let reduction = 0;
                 if (monthsEarly <= 36) {
@@ -536,7 +542,7 @@
                 }
                 return baseSpousal * (1 - reduction);
             }
-            
+
             return baseSpousal;
         }
 
@@ -545,67 +551,56 @@
         function runSimulation(params) {
             let portfolio = params.initialPortfolio;
             let totalSSNominal = 0;
-            const startYear = new Date().getFullYear(); // Dynamic start year
+            const startYear = new Date().getFullYear();
 
-            // Loop through months until life expectancy
             const monthsToSimulate = params.yearsToProject * 12;
-            let wealthPath = []; // Track annual wealth for break-even calc
-            let portfolioAtSSStart = null;  // Nominal portfolio when first SS income received
+            let wealthPath = [];
+            let portfolioAtSSStart = null;
             let monthsToSSStart = null;
 
             for (let m = 0; m < monthsToSimulate; m++) {
                 const currentYear = startYear + Math.floor(m / 12);
-                
-                // 1. Calculate Expenses (Inflation adjusted)
-                // We assume expenses grow with general inflation
+
                 const monthlyInflationFactor = Math.pow(1 + params.inflationRate/100, m/12);
                 const currentMonthlyExpenses = params.baseMonthlyExpenses * monthlyInflationFactor;
 
-                // 2. Calculate Social Security Income (COLA adjusted)
-                // We assume SS grows with SS COLA
                 const ssColaFactor = Math.pow(1 + params.ssCola/100, m/12);
-                
+
                 let monthlySS = 0;
 
-                // Single Logic
                 if (params.type === 'single') {
-                    const ageInMonths = (params.currentAge * 12) + m;
-                    const currentAge = ageInMonths / 12;
-                    
-                    if (currentAge >= params.claimAge) {
+                    const currentAgeYears = params.currentAge + m / 12;
+
+                    if (currentAgeYears >= params.claimAge) {
                         let benefit = params.baseBenefit * ssColaFactor;
-                        // Apply Depletion Scenario
                         if (currentYear >= 2032) {
                             if (params.depletionScenario === 'depletion') benefit *= 0.77;
                             if (params.depletionScenario === 'insolvency') benefit = 0;
                         }
                         monthlySS = benefit;
                     }
-                } 
-                // Couple Logic
-                else {
-                    const p1Age = (params.p1.currentAge * 12) + m;
-                    const p2Age = (params.p2.currentAge * 12) + m;
-                    
-                    // Determine if alive
-                    const p1Alive = (p1Age / 12) < params.p1.lifeExpectancy;
-                    const p2Alive = (p2Age / 12) < params.p2.lifeExpectancy;
+                } else {
+                    // FIX: use age in months for calculation, but with clearer naming
+                    const p1AgeMonths = (params.p1.currentAge * 12) + m;
+                    const p2AgeMonths = (params.p2.currentAge * 12) + m;
+
+                    // FIX: use actual life expectancy for alive checks so survivor logic triggers correctly
+                    const p1Alive = (p1AgeMonths / 12) < params.p1.lifeExpectancy;
+                    const p2Alive = (p2AgeMonths / 12) < params.p2.lifeExpectancy;
 
                     let p1Benefit = 0;
                     let p2Benefit = 0;
 
-                    // Calculate own benefits if claimed and alive
-                    if (p1Alive && (p1Age/12) >= params.p1.claimAge) {
+                    if (p1Alive && (p1AgeMonths/12) >= params.p1.claimAge) {
                         p1Benefit = params.p1.baseBenefit * ssColaFactor;
                     }
-                    if (p2Alive && (p2Age/12) >= params.p2.claimAge) {
+                    if (p2Alive && (p2AgeMonths/12) >= params.p2.claimAge) {
                         p2Benefit = params.p2.baseBenefit * ssColaFactor;
                     }
 
-                    // Apply spousal benefit: each spouse receives max(own benefit, spousal benefit).
-                    // Spousal benefit requires the primary earner to have already claimed.
-                    const p1HasClaimed = (p1Age/12) >= params.p1.claimAge;
-                    const p2HasClaimed = (p2Age/12) >= params.p2.claimAge;
+                    const p1HasClaimed = (p1AgeMonths/12) >= params.p1.claimAge;
+                    const p2HasClaimed = (p2AgeMonths/12) >= params.p2.claimAge;
+
                     if (p1Alive && p2Alive) {
                         if (p2HasClaimed && p1HasClaimed) {
                             const p2Spousal = getSpousalBenefitForAge(params.p1.pia, params.p2.fra, params.p2.claimAge) * ssColaFactor;
@@ -617,18 +612,32 @@
                         }
                     }
 
-                    // Handle Survivor Logic (Highest earner's benefit carries over)
+                    // FIX: survivor benefit uses the deceased's actual benefit, accounting for
+                    // whether they had reached their claim age before death.
                     if (!p1Alive && p2Alive) {
-                        // P2 is survivor. Gets higher of Own or P1's benefit (if P1 had claimed)
-                        // Note: Survivor benefit calculation is complex, simplifying to:
-                        // If P1 died, P2 gets P1's benefit if it's higher than P2's own.
-                        // We use the benefit P1 WOULD have had (including delayed credits)
-                        let survivorBenefit = params.p1.baseBenefit * ssColaFactor; 
+                        let survivorBenefit;
+                        if (params.p1.lifeExpectancy >= params.p1.claimAge) {
+                            // P1 lived long enough to claim — survivor gets P1's full benefit
+                            survivorBenefit = params.p1.baseBenefit * ssColaFactor;
+                        } else if (params.p1.lifeExpectancy >= 62) {
+                            // P1 died before claiming — benefit capped at their FRA rate
+                            const ageForBenefit = Math.min(params.p1.lifeExpectancy, params.p1.fra);
+                            survivorBenefit = getBenefitForAge(params.p1.pia, params.p1.fra, ageForBenefit) * ssColaFactor;
+                        } else {
+                            survivorBenefit = 0;
+                        }
                         p2Benefit = Math.max(p2Benefit, survivorBenefit);
                         p1Benefit = 0;
                     } else if (p1Alive && !p2Alive) {
-                        // P1 is survivor
-                        let survivorBenefit = params.p2.baseBenefit * ssColaFactor;
+                        let survivorBenefit;
+                        if (params.p2.lifeExpectancy >= params.p2.claimAge) {
+                            survivorBenefit = params.p2.baseBenefit * ssColaFactor;
+                        } else if (params.p2.lifeExpectancy >= 62) {
+                            const ageForBenefit = Math.min(params.p2.lifeExpectancy, params.p2.fra);
+                            survivorBenefit = getBenefitForAge(params.p2.pia, params.p2.fra, ageForBenefit) * ssColaFactor;
+                        } else {
+                            survivorBenefit = 0;
+                        }
                         p1Benefit = Math.max(p1Benefit, survivorBenefit);
                         p2Benefit = 0;
                     } else if (!p1Alive && !p2Alive) {
@@ -636,7 +645,6 @@
                         p2Benefit = 0;
                     }
 
-                    // Apply Depletion
                     if (currentYear >= 2032) {
                         if (params.depletionScenario === 'depletion') {
                             p1Benefit *= 0.77;
@@ -650,8 +658,8 @@
                     monthlySS = p1Benefit + p2Benefit;
                 }
 
-                // Apply Six-Figure Limit (SFL) cap
-                // Single: $50K/yr cap. Couple: $70K/yr (both at 62) to $100K/yr (both at 70), interpolated by avg claim age.
+                // SFL cap applied in nominal dollars (cap does not inflate — this is a feature of the
+                // proposed reform and makes early claiming more attractive for high-benefit households)
                 if (params.depletionScenario === 'sfl') {
                     let sflMonthlyCap;
                     if (params.type === 'single') {
@@ -667,29 +675,23 @@
 
                 totalSSNominal += monthlySS;
 
-                // Capture portfolio value the moment SS income first arrives
                 if (monthlySS > 0 && portfolioAtSSStart === null) {
                     portfolioAtSSStart = portfolio;
                     monthsToSSStart = m;
                 }
 
-                // 3. Portfolio Withdrawal
                 const withdrawalNeeded = Math.max(0, currentMonthlyExpenses - monthlySS);
 
-                // 4. Portfolio Growth (Nominal)
-                // Monthly nominal return
                 const monthlyReturn = Math.pow(1 + params.investmentReturn/100, 1/12) - 1;
                 portfolio = (portfolio * (1 + monthlyReturn)) - withdrawalNeeded;
 
                 if (portfolio < 0) portfolio = 0;
 
-                // Record Wealth Path (Nominal) at end of each year
                 if ((m + 1) % 12 === 0) {
                     wealthPath.push(portfolio);
                 }
             }
 
-            // Convert Final Portfolio to Present Value (Discounting by Inflation)
             const discountFactor = Math.pow(1 + params.inflationRate/100, params.yearsToProject);
             const presentValuePortfolio = portfolio / discountFactor;
 
@@ -712,9 +714,9 @@
             return months > 0 ? `${years} + ${months}mo` : `${years}`;
         }
 
+        // FIX: always returns a string
         function effectiveClaimLabel(claimAge, currentAge) {
-            // If the claim age is already in the past, show "Now" to avoid misleading labels
-            return claimAge <= currentAge ? `Now (${claimAge})` : claimAge;
+            return claimAge <= currentAge ? `Now (${claimAge})` : String(claimAge);
         }
 
         // --- Strategy Builders ---
@@ -723,10 +725,31 @@
             try {
                 const currentAge = parseInt(document.getElementById('currentAge').value);
                 const lifeExpectancy = parseInt(document.getElementById('lifeExpectancy').value);
+                const monthlyExpenses = parseFloat(document.getElementById('monthlyExpenses').value);
+                const portfolioValue = parseFloat(document.getElementById('portfolioValue').value);
+                const investmentReturn = parseFloat(document.getElementById('investmentReturn').value);
+
                 if (lifeExpectancy <= currentAge) {
                     alert("Life expectancy must be greater than your current age.");
                     return;
                 }
+
+                // Warn if portfolio is on a rapid depletion path even before SS needs
+                const annualSustainableWithdrawal = portfolioValue * (investmentReturn / 100);
+                if (monthlyExpenses * 12 > annualSustainableWithdrawal * 1.5) {
+                    const warningDiv = document.getElementById('expense-warning');
+                    if (!warningDiv) {
+                        const warning = document.createElement('div');
+                        warning.id = 'expense-warning';
+                        warning.className = 'warning-banner';
+                        warning.innerHTML = `⚠️ <strong>High Withdrawal Rate:</strong> Your monthly expenses ($${monthlyExpenses.toLocaleString()}/mo) significantly exceed what your portfolio can sustain through returns alone ($${Math.round(annualSustainableWithdrawal/12).toLocaleString()}/mo at ${investmentReturn}%). Portfolio depletion is likely under all strategies without sufficient Social Security income.`;
+                        document.getElementById('results').prepend(warning);
+                    }
+                } else {
+                    const warningDiv = document.getElementById('expense-warning');
+                    if (warningDiv) warningDiv.remove();
+                }
+
                 const analysisType = document.getElementById('analysisType').value;
                 if (analysisType === 'single') calculateSingleStrategy();
                 else calculateCoupleStrategy();
@@ -740,7 +763,7 @@
             const inputs = getCommonInputs();
             const pia = parseFloat(document.getElementById('pia').value);
             const fra = parseFloat(document.getElementById('fra').value);
-            const yearsToProject = 100 - inputs.currentAge; // Run until 100 for Break Even analysis
+            const yearsToProject = 100 - inputs.currentAge;
 
             const strategies = [
                 { name: "Claim Early (62)", claimAge: 62, type: 'early' },
@@ -750,7 +773,7 @@
 
             const results = strategies.map(strat => {
                 const baseBenefit = getBenefitForAge(pia, fra, strat.claimAge);
-                
+
                 const simResults = runSimulation({
                     type: 'single',
                     initialPortfolio: inputs.portfolioValue,
@@ -760,19 +783,15 @@
                     ssCola: inputs.ssInflation,
                     depletionScenario: inputs.depletionScenario,
                     currentAge: inputs.currentAge,
-                    lifeExpectancy: 100, // Force simulate to 100 for path comparison
                     yearsToProject: yearsToProject,
                     claimAge: strat.claimAge,
                     baseBenefit: baseBenefit
                 });
 
-                // Calculate PV at user's actual life expectancy
                 const userLifeExpectancyYears = inputs.lifeExpectancy - inputs.currentAge;
                 const indexAtLifeExpectancy = Math.min(simResults.wealthPath.length - 1, userLifeExpectancyYears - 1);
-                
-                // Get nominal wealth at life expectancy
+
                 const nominalAtLifeEx = simResults.wealthPath[indexAtLifeExpectancy] || 0;
-                // Discount it back to PV
                 const discountFactor = Math.pow(1 + inputs.inflationRate/100, userLifeExpectancyYears);
                 const pvAtLifeEx = nominalAtLifeEx / discountFactor;
 
@@ -789,7 +808,6 @@
                     wealthPath: simResults.wealthPath,
                     type: strat.type,
                     isWinner: false,
-                    // --- New tile metrics ---
                     preSS_monthly: yearsUntilSS > 0 ? inputs.monthlyExpenses : null,
                     monthlyGap_real: Math.max(0, inputs.monthlyExpenses - monthlySS_real),
                     portfolioAtSSStartPV: portfolioAtSSStartPV,
@@ -811,14 +829,14 @@
             const spouseFra = parseFloat(document.getElementById('spouseFra').value);
             const spouseLife = parseInt(document.getElementById('spouseLifeExpectancy').value);
 
-            const p1 = { currentAge: inputs.currentAge, pia: pia1, fra: fra1, lifeExpectancy: 100 };
-            const p2 = { currentAge: spouseAge, pia: spousePia, fra: spouseFra, lifeExpectancy: 100 };
+            // FIX: pass actual life expectancies so survivor benefits trigger correctly during simulation
+            const p1 = { currentAge: inputs.currentAge, pia: pia1, fra: fra1, lifeExpectancy: inputs.lifeExpectancy };
+            const p2 = { currentAge: spouseAge, pia: spousePia, fra: spouseFra, lifeExpectancy: spouseLife };
 
-            // Run until age 100 of the younger spouse for break even comparison
             const youngerStartAge = Math.min(inputs.currentAge, spouseAge);
-            const yearsToProject = 100 - youngerStartAge; 
+            const yearsToProject = 100 - youngerStartAge;
 
-            // Define Strategies
+            // FIX: split strategy — higher earner (strictly) delays; equal PIAs → P1 delays, P2 early (consistent tie-breaking)
             const strategyConfigs = [
                 {
                     name: "Both Early (62)",
@@ -840,8 +858,8 @@
                 },
                 {
                     name: "Split (Hybrid)",
-                    p1Claim: (p1.pia > p2.pia) ? 70 : 62,
-                    p2Claim: (p2.pia >= p1.pia) ? 70 : 62,
+                    p1Claim: p1.pia >= p2.pia ? 70 : 62,
+                    p2Claim: p2.pia > p1.pia ? 70 : 62,
                     isHybrid: true,
                     type: 'split'
                 }
@@ -865,10 +883,9 @@
                 });
 
                 let name = config.name;
-                if(config.isHybrid) {
-                    name = `Split: ${p1.pia > p2.pia ? 'You Delay, Spouse Early' : 'You Early, Spouse Delay'}`;
+                if (config.isHybrid) {
+                    name = `Split: ${p1.pia >= p2.pia ? 'You Delay, Spouse Early' : 'You Early, Spouse Delay'}`;
                 }
-                // Clarify staggered starts in the strategy name when spouses claim years apart
                 const p1YearsUntilSSLabel = Math.max(0, config.p1Claim - inputs.currentAge);
                 const p2YearsUntilSSLabel = Math.max(0, config.p2Claim - spouseAge);
                 if (p1YearsUntilSSLabel !== p2YearsUntilSSLabel) {
@@ -876,32 +893,27 @@
                     name += ` (${gapYears}-yr stagger)`;
                 }
 
-                // Calculate PV at Joint Life Expectancy (input)
                 const jointLifeExpectancy = Math.max(inputs.lifeExpectancy, spouseLife);
                 const actualYearsToProject = jointLifeExpectancy - youngerStartAge;
-                
+
                 const indexAtLifeExpectancy = Math.min(simResults.wealthPath.length - 1, actualYearsToProject - 1);
                 const nominalAtLifeEx = simResults.wealthPath[indexAtLifeExpectancy] || 0;
-                
+
                 const discountFactor = Math.pow(1 + inputs.inflationRate/100, actualYearsToProject);
                 const pvAtLifeEx = nominalAtLifeEx / discountFactor;
 
-                // Calendar years until each spouse's SS starts
                 const p1YearsUntilSS = Math.max(0, config.p1Claim - inputs.currentAge);
                 const p2YearsUntilSS = Math.max(0, config.p2Claim - spouseAge);
                 const yearsUntilFirstSS = Math.min(p1YearsUntilSS, p2YearsUntilSS);
-                const yearsUntilBothSS  = Math.max(p1YearsUntilSS, p2YearsUntilSS);
+                const yearsUntilBothSS = Math.max(p1YearsUntilSS, p2YearsUntilSS);
 
-                // Real (today's $) value of each benefit at their respective claim dates
                 const p1Real = p1Base / Math.pow(1 + inputs.inflationRate / 100, p1YearsUntilSS);
                 const p2Real = p2Base / Math.pow(1 + inputs.inflationRate / 100, p2YearsUntilSS);
                 const combinedSSReal = p1Real + p2Real;
 
-                // Portfolio PV when first SS income arrives
                 const inflFactorFirst = Math.pow(1 + inputs.inflationRate / 100, yearsUntilFirstSS);
                 const portfolioAtSSStartPV = simResults.portfolioAtSSStart / inflFactorFirst;
 
-                // Years drawing SS: from first SS check to end of last survivor
                 const p1CalendarYearsLeft = inputs.lifeExpectancy - inputs.currentAge;
                 const p2CalendarYearsLeft = spouseLife - spouseAge;
                 const lastSurvivorYears = Math.max(p1CalendarYearsLeft, p2CalendarYearsLeft);
@@ -921,36 +933,28 @@
                     wealthPath: simResults.wealthPath,
                     type: config.type,
                     isWinner: false,
-                    // --- New tile metrics ---
                     preSS_monthly: yearsUntilFirstSS > 0 ? inputs.monthlyExpenses : null,
                     monthlyGap_real: Math.max(0, inputs.monthlyExpenses - combinedSSReal),
                     portfolioAtSSStartPV: portfolioAtSSStartPV,
                     monthlySS_real: combinedSSReal,
                     yearsSS: yearsSS,
-                    // Phased SS: when spouses start at different times, show income in two stages
                     phase1Duration: yearsUntilBothSS - yearsUntilFirstSS,
                     phase1SS_real: p1YearsUntilSS <= p2YearsUntilSS ? p1Real : p2Real,
                     phase2SS_real: combinedSSReal
                 };
             });
 
-            // Find Break Even between "Both Early" and "Split" (usually the best comparison for couples)
-            // Or compare best vs second best logic
             const breakEvenAge = findBreakEvenAge(results, youngerStartAge);
-            
             displayResults(results, inputs, breakEvenAge);
         }
 
         function findBreakEvenAge(results, startAge) {
-            // Compare "Early" strategy vs the best challenger (Split or Delay)
             const earlyStrat = results.find(r => r.type === 'early');
             let lateStrat = results.find(r => r.type === 'split');
             if (!lateStrat) lateStrat = results.find(r => r.type === 'delay');
 
             if (!earlyStrat || !lateStrat) return null;
 
-            // Find the first year the late strategy pulls ahead and stays ahead
-            // for at least 3 consecutive years (avoids false crossovers).
             const minStreak = 3;
             let streak = 0;
             let crossoverIndex = -1;
@@ -960,7 +964,7 @@
                     if (streak === 0) crossoverIndex = i;
                     streak++;
                     if (streak >= minStreak) {
-                        return startAge + crossoverIndex + 1; // index 0 = end of year 1
+                        return startAge + crossoverIndex + 1;
                     }
                 } else {
                     streak = 0;
@@ -984,26 +988,23 @@
         }
 
         function displayResults(strategies, inputs, breakEvenAge) {
-            // Sort by PV of final portfolio
             strategies.sort((a, b) => b.finalPortfolio - a.finalPortfolio);
             strategies[0].isWinner = true;
 
             const best = strategies[0];
-            const advantage = best.finalPortfolio - strategies[1].finalPortfolio; // Gap to second place
+            const advantage = best.finalPortfolio - strategies[1].finalPortfolio;
 
             let html = ``;
 
-            // Winner Banner
             html += `<div class="winner-banner">
                 🏆 RECOMMENDED: ${best.name.toUpperCase()}
                 <br><small>Advantage over next best: $${Math.round(advantage).toLocaleString()}</small>
             </div>`;
 
-            // Break Even Box
             if (breakEvenAge && breakEvenAge !== "> 100") {
                 const userExpectedAge = inputs.lifeExpectancy;
                 let message = "";
-                
+
                 if (userExpectedAge >= breakEvenAge) {
                     message = `Since you expect to live to <b>${userExpectedAge}</b>, waiting pays off.`;
                 } else {
@@ -1031,10 +1032,9 @@
             html += `<div class="comparison-grid">`;
 
             strategies.forEach(s => {
-                // Determine display logic (Single vs Couple)
                 const isCouple = s.p1Benefit !== undefined;
                 let benefitDisplay = '';
-                
+
                 if (isCouple) {
                     benefitDisplay = `
                     <div class="breakdown-item">
@@ -1102,22 +1102,21 @@
             });
             html += `</div>`;
 
-            // Insights
             html += `<div class="key-insights">
                 <h3>💡 Strategic Analysis</h3>
                 <div class="insight-item">
                     <strong>The Result:</strong> The <b>${best.name}</b> strategy leaves you with the highest portfolio value (in today's dollars) at the end of your life expectancy.
                 </div>
                 <div class="insight-item">
-                    <strong>Portfolio Survival:</strong> 
-                    ${best.finalPortfolio > 0 ? 
-                        `Your portfolio is projected to last through age ${inputs.lifeExpectancy}.` : 
+                    <strong>Portfolio Survival:</strong>
+                    ${best.finalPortfolio > 0 ?
+                        `Your portfolio is projected to last through age ${inputs.lifeExpectancy}.` :
                         `<span style="color: red; font-weight: bold;">Warning: Even the best strategy results in portfolio depletion before life expectancy based on these expenses.</span>`}
                 </div>
                 <div class="insight-item">
                     <strong>Inflation Reality:</strong> A ${inputs.investmentReturn}% return with ${inputs.inflationRate}% inflation is only a ${(inputs.investmentReturn - inputs.inflationRate).toFixed(1)}% Real Return. This calculator accounts for that drag.
                 </div>`;
-            
+
             if (inputs.depletionScenario === 'depletion' || inputs.depletionScenario === 'insolvency') {
                 html += `<div class="insight-item">
                     <strong>Trust Fund Impact:</strong> Because you selected a depletion scenario (${inputs.depletionScenario}), claiming earlier tends to look mathematically better because you lock in money before the cuts occur in 2032.
@@ -1126,7 +1125,7 @@
 
             if (inputs.depletionScenario === 'sfl') {
                 html += `<div class="insight-item">
-                    <strong>Six-Figure Limit (SFL) Impact:</strong> Under this proposed reform, annual SS benefits are capped — $50,000 for singles, $70,000 for couples who both claim at 62, up to $100,000 for couples who both delay to 70. High earners are most affected. Claiming early locks in a lower benefit, which may fall under the cap and avoid any reduction — making early claiming more attractive for high-benefit households under SFL.
+                    <strong>Six-Figure Limit (SFL) Impact:</strong> Under this proposed reform, annual SS benefits are capped in nominal dollars — $50,000 for singles, $70,000 for couples who both claim at 62, up to $100,000 for couples who both delay to 70. Because the cap is fixed in nominal terms, it becomes more restrictive in real (inflation-adjusted) terms each year. High earners are most affected. Claiming early locks in a lower benefit that may fall under the cap, making early claiming more attractive for high-benefit households under SFL.
                 </div>`;
             }
 
