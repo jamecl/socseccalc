@@ -425,11 +425,11 @@
                     <label for="ssDepletionScenario">Social Security Reform Scenario</label>
                     <select id="ssDepletionScenario">
                         <option value="current">Current Law (No Changes)</option>
-                        <option value="depletion">2032 Trust Fund Depletion (23% Benefit Cut)</option>
-                        <option value="insolvency">2032 Social Security Insolvency (100% Benefit Loss)</option>
+                        <option value="depletion">2032 OASI Trust Fund Depletion (22% Benefit Cut)</option>
+                        <option value="insolvency">2032 OASI Depletion — Worst Case (100% Benefit Loss)</option>
                         <option value="sfl">Six-Figure Limit (SFL) — Benefit Cap Reform</option>
                     </select>
-                    <small style="color: #666; font-size: 0.85em;">Trustees project trust fund depletion by 2032. SFL caps annual benefits: single $50K, couple at 62 $70K, couple at 70 $100K (interpolated by claim age). SFL cap is applied in nominal dollars and does not inflate over time.</small>
+                    <small style="color: #666; font-size: 0.85em;">Per the 2026 Trustees Report, the OASI (retirement/survivor) fund depletes in Q4 2032 — at that point SSA can pay 78% of scheduled benefits (22% cut). The combined OASDI fund depletes in 2034 with a 17% cut. SFL caps annual benefits: single $50K, couple at 62 $70K, couple at 70 $100K (interpolated by claim age). SFL cap is applied in nominal dollars and does not inflate over time.</small>
                 </div>
 
                 <div class="spouse-fields" id="spouseLifeFields" style="display: none;">
@@ -574,7 +574,7 @@
                     if (currentAgeYears >= params.claimAge) {
                         let benefit = params.baseBenefit * ssColaFactor;
                         if (currentYear >= 2032) {
-                            if (params.depletionScenario === 'depletion') benefit *= 0.77;
+                            if (params.depletionScenario === 'depletion') benefit *= 0.78;
                             if (params.depletionScenario === 'insolvency') benefit = 0;
                         }
                         monthlySS = benefit;
@@ -647,8 +647,8 @@
 
                     if (currentYear >= 2032) {
                         if (params.depletionScenario === 'depletion') {
-                            p1Benefit *= 0.77;
-                            p2Benefit *= 0.77;
+                            p1Benefit *= 0.78;
+                            p2Benefit *= 0.78;
                         } else if (params.depletionScenario === 'insolvency') {
                             p1Benefit = 0;
                             p2Benefit = 0;
